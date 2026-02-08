@@ -1,0 +1,13 @@
+.git
+.vscode
+phpdesktop.zip
+phpdesktop-chrome-*
+Output
+*.bat
+*.iss
+myconn.session.sql
+tmp
+*.sql
+*.md
+Dockerfile
+docker-compose.yml

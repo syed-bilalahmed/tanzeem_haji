@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # PHP/Apache Web Server
+  web:
+    build: .
+    container_name: tanzeem_web
+    ports:
+      - "8080:80"
+    environment:
+      - DB_HOST=db
+      - DB_NAME=tanzeem_db
+      - DB_USER=root
+      - DB_PASS=root
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - tanzeem_net
+
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: tanzeem_db
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=tanzeem_db
+    volumes:
+      - db_data:/var/lib/mysql
+      # Uncomment the next line to auto-import database.sql on first run
+      # - ./database.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - tanzeem_net
+
+  # phpMyAdmin (Optional - for DB management)
+  pma:
+    image: phpmyadmin/phpmyadmin
+    container_name: tanzeem_pma
+    ports:
+      - "8081:80"
+    environment:
+      - PMA_HOST=db
+      - PMA_USER=root
+      - PMA_PASSWORD=root
+    depends_on:
+      - db
+    networks:
+      - tanzeem_net
+
+networks:
+  tanzeem_net:
+    driver: bridge
+
+volumes:
+  db_data:

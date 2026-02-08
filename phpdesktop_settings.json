@@ -1,0 +1,39 @@
+{
+    "application": {
+        "language": "en-US"
+    },
+    "debugging": {
+        "show_console": false,
+        "subprocess_show_console": false,
+        "log_level": "INFO",
+        "log_file": "debug.log"
+    },
+    "main_window": {
+        "title": "Tanzeem Software (Desktop App)",
+        "icon": "www/logo.jpeg",
+        "default_size": [1280, 800],
+        "minimum_size": [800, 600],
+        "disable_maximize": false,
+        "center_on_screen": true,
+        "start_maximized": false
+    },
+    "popup_window": {
+        "icon": "www/logo.jpeg",
+        "center_on_screen": true
+    },
+    "web_server": {
+        "listen_on": ["127.0.0.1", 0],
+        "www_directory": "www",
+        "index_files": ["index.php", "index.html"],
+        "cgi_interpreter": "php/php-cgi.exe",
+        "cgi_extensions": ["php"],
+        "cgi_temp_dir": "",
+        "404_handler": "/pretty-urls.php"
+    },
+    "chrome": {
+        "log_file": "debug.log",
+        "cache_path": "webcache",
+        "copy_sys_proxy_settings": true,
+        "external_drag": true
+    }
+}

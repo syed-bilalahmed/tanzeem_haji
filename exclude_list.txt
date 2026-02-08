@@ -1,0 +1,16 @@
+.zip
+.iss
+.bat
+P_Desktop
+unzipper.php
+.git
+.gemini
+check_cols.php
+update_db
+restore.php
+backup.php
+setup_
+debug_
+test_
+.vscode
+.idea
