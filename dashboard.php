@@ -175,14 +175,35 @@ for($m=1; $m<=12; $m++) {
     
     <!-- Funeral Stats -->
     <?php
-    $stmt_fun = $pdo->prepare("SELECT count(*) as total_deaths FROM funeral_records WHERE year = ?");
-    $stmt_fun->execute([$year]); // Using $year from dashboard filter
+    // Total Deaths
+    $stmt_fun = $pdo->prepare("SELECT count(*) as total_deaths, SUM(digging + tea + truck + other) as total_expense FROM funeral_records WHERE year = ?");
+    $stmt_fun->execute([$year]); 
     $fun_stats = $stmt_fun->fetch(PDO::FETCH_ASSOC);
+    $fun_expense = $fun_stats['total_expense'] ?: 0;
+
+    // Returned Amount
+    $stmt_ret = $pdo->prepare("SELECT (ret_digging + ret_tea + ret_truck + ret_other) as total_return FROM funeral_year_summary WHERE year = ?");
+    $stmt_ret->execute([$year]);
+    $fun_return = $stmt_ret->fetchColumn() ?: 0;
     ?>
     <div class="stat-card" style="background: linear-gradient(135deg, #1f2937, #111827); color:white;">
-        <h3 class="d-flex justify-content-between"><span>تجہیز و تکفین</span> <i class="fas fa-praying-hands opacity-50"></i></h3>
-        <div class="value"><?php echo $fun_stats['total_deaths']; ?></div>
-        <div class="small text-white-50"><a href="funeral_record.php" class="text-white text-decoration-none">ریکارڈ دیکھیں <i class="fas fa-arrow-right ms-1"></i></a></div>
+        <h3 class="d-flex justify-content-between mb-3"><span>تجہیز و تکفین</span> <i class="fas fa-praying-hands opacity-50"></i></h3>
+        
+        <div class="d-flex justify-content-between align-items-end mb-2">
+             <div>
+                <div class="value"><?php echo $fun_stats['total_deaths']; ?></div>
+                <div class="small text-white-50">اموات (Deaths)</div>
+             </div>
+             <div class="text-end">
+                <div class="fs-5 fw-bold text-warning">Exp: <?php echo number_format($fun_expense); ?></div>
+                <div class="small text-white-50">Net: <?php echo number_format($fun_expense - $fun_return); ?></div>
+             </div>
+        </div>
+        
+        <div class="small text-white-50 border-top pt-2 mt-1 border-secondary d-flex justify-content-between">
+            <span>Return: <?php echo number_format($fun_return); ?></span>
+            <a href="funeral_record.php" class="text-white text-decoration-none">تفصیل <i class="fas fa-arrow-right ms-1"></i></a>
+        </div>
     </div>
 </div>
 

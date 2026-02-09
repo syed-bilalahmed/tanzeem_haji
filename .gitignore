@@ -1,0 +1,13 @@
+     # Executables & Archives
+*.exe
+*.zip
+*.dll
+
+# PHP Desktop Runtime
+phpdesktop*
+Output/
+
+# OS & Editor
+.vscode/
+.DS_Store
+Thumbs.db
