@@ -17,7 +17,8 @@ function parse_month_year_value($value) {
 
     $month_token_raw = $parts[0];
     $month_token = function_exists('mb_strtolower') ? mb_strtolower($month_token_raw, 'UTF-8') : strtolower($month_token_raw);
-    $year = (count($parts) === 2 && preg_match('/^\d{4}$/', $parts[1])) ? (int) $parts[1] : (int) date('Y');
+    $has_year = (count($parts) === 2 && preg_match('/^\d{4}$/', $parts[1]));
+    $year = $has_year ? (int) $parts[1] : (int) date('Y');
 
     $month_map = [
         'january' => 1, 'jan' => 1, 'jany' => 1,
@@ -47,21 +48,30 @@ function parse_month_year_value($value) {
     ];
 
     if (isset($month_map[$month_token])) {
-        return ['year' => $year, 'month' => $month_map[$month_token]];
+        return ['year' => $year, 'month' => $month_map[$month_token], 'has_year' => $has_year];
     }
 
     return null;
 }
 
-function get_month_span_inclusive($month_from, $month_to) {
+function get_month_span_inclusive($month_from, $month_to, &$error = null) {
     $start = parse_month_year_value($month_from);
     if (!$start) {
-        return 1;
+        $error = "مہینہ از (Month From) غلط ہے۔ مثال: January 2026 یا جنوری 2026";
+        return null;
     }
 
     $end = trim((string) $month_to) === '' ? $start : parse_month_year_value($month_to);
     if (!$end) {
-        $end = $start;
+        $error = "مہینہ تک (Month To) غلط ہے۔ مثال: June 2026 یا جون 2026";
+        return null;
+    }
+
+    if (empty($start['has_year']) && !empty($end['has_year'])) {
+        $start['year'] = $end['year'];
+    }
+    if (!empty($start['has_year']) && empty($end['has_year'])) {
+        $end['year'] = $start['year'];
     }
 
     $start_index = ($start['year'] * 12) + $start['month'];
@@ -79,6 +89,7 @@ $stmt = $pdo->query("SELECT * FROM renters WHERE status='active' ORDER BY id ASC
 $renters = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Handle form submission
+$form_error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $renter_id = $_POST['renter_id'];
     $receipt_date = $_POST['receipt_date'];
@@ -90,7 +101,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $received_amount = floatval($_POST['amount_received']);
     $notes = $_POST['notes'];
 
-    $months_count = get_month_span_inclusive($month_from, $month_to);
+    $months_count = get_month_span_inclusive($month_from, $month_to, $form_error);
+    if ($months_count === null) {
+        $months_count = 1;
+    }
     $total_amount = ($monthly_rent * $months_count) + $arrears;
     $remaining_balance = $total_amount - $received_amount;
     
@@ -101,18 +115,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     
-    if ($insert_stmt->execute([$renter_id, $receipt_date, $receipt_no, $month_from, $month_to, $monthly_rent, $arrears, $total_amount, $received_amount, $remaining_balance, $notes])) {
+    if ($form_error === '' && $insert_stmt->execute([$renter_id, $receipt_date, $receipt_no, $month_from, $month_to, $monthly_rent, $arrears, $total_amount, $received_amount, $remaining_balance, $notes])) {
         $last_id = $pdo->lastInsertId();
         // Redirect to print page with the ID
         echo "<script>window.location.href='print_rent_receipt.php?id=$last_id';</script>";
         exit;
-    } else {
+    } else if ($form_error === '') {
         echo "<div class='alert alert-danger'>Error generating receipt.</div>";
     }
 }
 ?>
 
 <div class="card" style="max-width:800px; margin:0 auto; padding: 20px;">
+    <?php if($form_error !== ''): ?>
+        <div class="alert alert-danger"><?php echo htmlspecialchars($form_error); ?></div>
+    <?php endif; ?>
     <h2 class="section-title text-center">دکان کرایہ کی رسید</h2>
     <p class="text-muted text-center">تفصیلات درج کر کے رسید تیار کریں۔</p>
     
@@ -212,7 +229,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (parts.length < 1 || parts.length > 2) return null;
 
         const token = parts[0].toLowerCase();
-        const year = (parts.length === 2 && /^\d{4}$/.test(parts[1])) ? parseInt(parts[1], 10) : new Date().getFullYear();
+        const hasYear = (parts.length === 2 && /^\d{4}$/.test(parts[1]));
+        const year = hasYear ? parseInt(parts[1], 10) : new Date().getFullYear();
 
         const monthMap = {
             'january': 1, 'jan': 1, 'jany': 1,
@@ -242,7 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         };
 
         if (monthMap[token]) {
-            return { year: year, month: monthMap[token] };
+            return { year: year, month: monthMap[token], hasYear: hasYear };
         }
 
         return null;
@@ -250,9 +268,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     function getMonthsCount() {
         const start = parseMonthYear(monthFromInput.value);
-        if (!start) return 1;
+        if (!start) return null;
 
-        const end = parseMonthYear(monthToInput.value) || start;
+        let end = parseMonthYear(monthToInput.value);
+        if (!end) {
+            if ((monthToInput.value || '').trim() !== '') return null;
+            end = start;
+        }
+        if (!start.hasYear && end.hasYear) {
+            start.year = end.year;
+        }
+        if (start.hasYear && !end.hasYear) {
+            end.year = start.year;
+        }
         let startIndex = (start.year * 12) + start.month;
         let endIndex = (end.year * 12) + end.month;
 
@@ -279,16 +307,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     function calculateTotal() {
         const rent = parseFloat(monthlyRentInput.value) || 0;
         const months = getMonthsCount();
+        if (!months) {
+            monthsInput.value = '';
+            totalAmountInput.value = '';
+            calculateBalance();
+            return;
+        }
         monthsInput.value = months;
         const arrears = parseFloat(arrearsInput.value) || 0;
         
         const total = (rent * months) + arrears;
         totalAmountInput.value = total;
         
-        // Assume full payment by default when total changes, or keep current if it's not 0
-        if (amountReceivedInput.value == 0 || amountReceivedInput.value == totalAmountInput.value) {
-            amountReceivedInput.value = total;
-        }
         calculateBalance();
     }
 

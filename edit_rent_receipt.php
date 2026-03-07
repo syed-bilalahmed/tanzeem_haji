@@ -18,7 +18,8 @@ function parse_month_year_value($value) {
 
     $month_token_raw = $parts[0];
     $month_token = function_exists('mb_strtolower') ? mb_strtolower($month_token_raw, 'UTF-8') : strtolower($month_token_raw);
-    $year = (count($parts) === 2 && preg_match('/^\d{4}$/', $parts[1])) ? (int) $parts[1] : (int) date('Y');
+    $has_year = (count($parts) === 2 && preg_match('/^\d{4}$/', $parts[1]));
+    $year = $has_year ? (int) $parts[1] : (int) date('Y');
 
     $month_map = [
         'january' => 1, 'jan' => 1, 'jany' => 1,
@@ -48,21 +49,30 @@ function parse_month_year_value($value) {
     ];
 
     if (isset($month_map[$month_token])) {
-        return ['year' => $year, 'month' => $month_map[$month_token]];
+        return ['year' => $year, 'month' => $month_map[$month_token], 'has_year' => $has_year];
     }
 
     return null;
 }
 
-function get_month_span_inclusive($month_from, $month_to) {
+function get_month_span_inclusive($month_from, $month_to, &$error = null) {
     $start = parse_month_year_value($month_from);
     if (!$start) {
-        return 1;
+        $error = "مہینہ از (Month From) غلط ہے۔ مثال: January 2026 یا جنوری 2026";
+        return null;
     }
 
     $end = trim((string) $month_to) === '' ? $start : parse_month_year_value($month_to);
     if (!$end) {
-        $end = $start;
+        $error = "مہینہ تک (Month To) غلط ہے۔ مثال: June 2026 یا جون 2026";
+        return null;
+    }
+
+    if (empty($start['has_year']) && !empty($end['has_year'])) {
+        $start['year'] = $end['year'];
+    }
+    if (!empty($start['has_year']) && empty($end['has_year'])) {
+        $end['year'] = $start['year'];
     }
 
     $start_index = ($start['year'] * 12) + $start['month'];
@@ -90,7 +100,11 @@ if (!$receipt) {
     die("Receipt not found.");
 }
 
-$initial_months_count = get_month_span_inclusive($receipt['month_from'], $receipt['month_to']);
+$initial_months_error = null;
+$initial_months_count = get_month_span_inclusive($receipt['month_from'], $receipt['month_to'], $initial_months_error);
+if ($initial_months_count === null) {
+    $initial_months_count = 1;
+}
 
 // Fetch all renters for the dropdown
 $stmt_renters = $pdo->query("SELECT * FROM renters WHERE status = 'active' ORDER BY shop_no ASC");
@@ -108,13 +122,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $monthly_rent = floatval($_POST['monthly_rent']);
     $arrears = floatval($_POST['arrears']);
     $amount_received = floatval($_POST['amount_received']);
-    $months_count = get_month_span_inclusive($month_from, $month_to);
+    $months_count = get_month_span_inclusive($month_from, $month_to, $error);
+    if ($months_count === null) {
+        $months_count = 1;
+    }
     $total_amount = ($monthly_rent * $months_count) + $arrears;
     $remaining_balance = $total_amount - $amount_received;
     $notes = $_POST['notes'];
 
     if (empty($renter_id) || empty($receipt_date) || empty($month_from) || empty($total_amount)) {
         $error = "تمام ضروری خانے پُر کریں۔ (Please fill all required fields)";
+    } elseif ($error !== '') {
+        // Keep parser validation message.
     } else {
         try {
             $update_stmt = $pdo->prepare("
@@ -253,7 +272,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if (parts.length < 1 || parts.length > 2) return null;
 
         const token = parts[0].toLowerCase();
-        const year = (parts.length === 2 && /^\d{4}$/.test(parts[1])) ? parseInt(parts[1], 10) : new Date().getFullYear();
+        const hasYear = (parts.length === 2 && /^\d{4}$/.test(parts[1]));
+        const year = hasYear ? parseInt(parts[1], 10) : new Date().getFullYear();
 
         const monthMap = {
             'january': 1, 'jan': 1, 'jany': 1,
@@ -283,7 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         };
 
         if (monthMap[token]) {
-            return { year: year, month: monthMap[token] };
+            return { year: year, month: monthMap[token], hasYear: hasYear };
         }
 
         return null;
@@ -291,9 +311,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     function getMonthsCount() {
         const start = parseMonthYear(monthFromInput.value);
-        if (!start) return 1;
+        if (!start) return null;
 
-        const end = parseMonthYear(monthToInput.value) || start;
+        let end = parseMonthYear(monthToInput.value);
+        if (!end) {
+            if ((monthToInput.value || '').trim() !== '') return null;
+            end = start;
+        }
+        if (!start.hasYear && end.hasYear) {
+            start.year = end.year;
+        }
+        if (start.hasYear && !end.hasYear) {
+            end.year = start.year;
+        }
         let startIndex = (start.year * 12) + start.month;
         let endIndex = (end.year * 12) + end.month;
 
@@ -307,6 +337,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     function calculateTotal() {
         const rent = parseFloat(monthlyRentInput.value) || 0;
         const months = getMonthsCount();
+        if (!months) {
+            monthsInput.value = '';
+            totalAmountInput.value = '';
+            calculateBalance();
+            return;
+        }
         monthsInput.value = months;
         const arrears = parseFloat(arrearsInput.value) || 0;
         

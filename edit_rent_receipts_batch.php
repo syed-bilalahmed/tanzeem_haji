@@ -21,7 +21,8 @@ function parse_month_year_value($value) {
 
     $month_token_raw = $parts[0];
     $month_token = function_exists('mb_strtolower') ? mb_strtolower($month_token_raw, 'UTF-8') : strtolower($month_token_raw);
-    $year = (count($parts) === 2 && preg_match('/^\d{4}$/', $parts[1])) ? (int) $parts[1] : (int) date('Y');
+    $has_year = (count($parts) === 2 && preg_match('/^\d{4}$/', $parts[1]));
+    $year = $has_year ? (int) $parts[1] : (int) date('Y');
 
     $month_map = [
         'january' => 1, 'jan' => 1, 'jany' => 1,
@@ -51,21 +52,30 @@ function parse_month_year_value($value) {
     ];
 
     if (isset($month_map[$month_token])) {
-        return ['year' => $year, 'month' => $month_map[$month_token]];
+        return ['year' => $year, 'month' => $month_map[$month_token], 'has_year' => $has_year];
     }
 
     return null;
 }
 
-function get_month_span_inclusive($month_from, $month_to) {
+function get_month_span_inclusive($month_from, $month_to, &$error = null) {
     $start = parse_month_year_value($month_from);
     if (!$start) {
-        return 1;
+        $error = "مہینہ از (Month From) غلط ہے۔ مثال: January 2026 یا جنوری 2026";
+        return null;
     }
 
     $end = trim((string) $month_to) === '' ? $start : parse_month_year_value($month_to);
     if (!$end) {
-        $end = $start;
+        $error = "مہینہ تک (Month To) غلط ہے۔ مثال: June 2026 یا جون 2026";
+        return null;
+    }
+
+    if (empty($start['has_year']) && !empty($end['has_year'])) {
+        $start['year'] = $end['year'];
+    }
+    if (!empty($start['has_year']) && empty($end['has_year'])) {
+        $end['year'] = $start['year'];
     }
 
     $start_index = ($start['year'] * 12) + $start['month'];
@@ -103,7 +113,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_batch'])) {
             $month_to = trim($_POST['month_to'][$index]);
             $monthly_rent = floatval($_POST['monthly_rent'][$index]);
             $arrears = floatval($_POST['arrears'][$index]);
-            $months_count = get_month_span_inclusive($month_from, $month_to);
+            $months_count = get_month_span_inclusive($month_from, $month_to, $error);
+            if ($months_count === null) {
+                throw new Exception($error);
+            }
             $total_amount = ($monthly_rent * $months_count) + $arrears;
             $amount_received = floatval($_POST['amount_received'][$index]);
             $remaining_balance = $total_amount - $amount_received;
@@ -209,7 +222,8 @@ function parseMonthYear(text) {
     if (parts.length < 1 || parts.length > 2) return null;
 
     const token = parts[0].toLowerCase();
-    const year = (parts.length === 2 && /^\d{4}$/.test(parts[1])) ? parseInt(parts[1], 10) : new Date().getFullYear();
+    const hasYear = (parts.length === 2 && /^\d{4}$/.test(parts[1]));
+    const year = hasYear ? parseInt(parts[1], 10) : new Date().getFullYear();
 
     const monthMap = {
         'january': 1, 'jan': 1, 'jany': 1,
@@ -239,7 +253,7 @@ function parseMonthYear(text) {
     };
 
     if (monthMap[token]) {
-        return { year: year, month: monthMap[token] };
+        return { year: year, month: monthMap[token], hasYear: hasYear };
     }
 
     return null;
@@ -247,9 +261,19 @@ function parseMonthYear(text) {
 
 function getMonthsCount(index) {
     const start = parseMonthYear(document.getElementById('month_from_'+index).value);
-    if (!start) return 1;
+    if (!start) return null;
 
-    const end = parseMonthYear(document.getElementById('month_to_'+index).value) || start;
+    let end = parseMonthYear(document.getElementById('month_to_'+index).value);
+    if (!end) {
+        if ((document.getElementById('month_to_'+index).value || '').trim() !== '') return null;
+        end = start;
+    }
+    if (!start.hasYear && end.hasYear) {
+        start.year = end.year;
+    }
+    if (start.hasYear && !end.hasYear) {
+        end.year = start.year;
+    }
     let startIndex = (start.year * 12) + start.month;
     let endIndex = (end.year * 12) + end.month;
 
@@ -263,10 +287,13 @@ function getMonthsCount(index) {
 function calcRow(index) {
     let rent = parseFloat(document.getElementById('rent_'+index).value) || 0;
     let months = getMonthsCount(index);
+    if (!months) {
+        document.getElementById('total_'+index).value = '';
+        return;
+    }
     let arrears = parseFloat(document.getElementById('arrears_'+index).value) || 0;
     let total = (rent * months) + arrears;
     document.getElementById('total_'+index).value = total;
-    document.getElementById('received_'+index).value = total;
 }
 
 document.querySelectorAll('input[id^="rent_"], input[id^="arrears_"], input[id^="month_from_"], input[id^="month_to_"]').forEach((el) => {

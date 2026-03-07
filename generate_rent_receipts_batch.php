@@ -18,7 +18,8 @@ function parse_month_year_value($value) {
 
     $month_token_raw = $parts[0];
     $month_token = function_exists('mb_strtolower') ? mb_strtolower($month_token_raw, 'UTF-8') : strtolower($month_token_raw);
-    $year = (count($parts) === 2 && preg_match('/^\d{4}$/', $parts[1])) ? (int) $parts[1] : (int) date('Y');
+    $has_year = (count($parts) === 2 && preg_match('/^\d{4}$/', $parts[1]));
+    $year = $has_year ? (int) $parts[1] : (int) date('Y');
 
     $month_map = [
         'january' => 1, 'jan' => 1, 'jany' => 1,
@@ -48,21 +49,30 @@ function parse_month_year_value($value) {
     ];
 
     if (isset($month_map[$month_token])) {
-        return ['year' => $year, 'month' => $month_map[$month_token]];
+        return ['year' => $year, 'month' => $month_map[$month_token], 'has_year' => $has_year];
     }
 
     return null;
 }
 
-function get_month_span_inclusive($month_from, $month_to) {
+function get_month_span_inclusive($month_from, $month_to, &$error = null) {
     $start = parse_month_year_value($month_from);
     if (!$start) {
-        return 1;
+        $error = "مہینہ از (Month From) غلط ہے۔ مثال: January 2026 یا جنوری 2026";
+        return null;
     }
 
     $end = trim((string) $month_to) === '' ? $start : parse_month_year_value($month_to);
     if (!$end) {
-        $end = $start;
+        $error = "مہینہ تک (Month To) غلط ہے۔ مثال: June 2026 یا جون 2026";
+        return null;
+    }
+
+    if (empty($start['has_year']) && !empty($end['has_year'])) {
+        $start['year'] = $end['year'];
+    }
+    if (!empty($start['has_year']) && empty($end['has_year'])) {
+        $end['year'] = $start['year'];
     }
 
     $start_index = ($start['year'] * 12) + $start['month'];
@@ -87,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $receipt_date = $_POST['receipt_date'];
     $month_from   = trim($_POST['month_from']);
     $month_to     = trim($_POST['month_to']);
-    $months_count = get_month_span_inclusive($month_from, $month_to);
+    $months_count = get_month_span_inclusive($month_from, $month_to, $error);
     
     // Arrays from form
     $generate_flags   = isset($_POST['generate']) ? $_POST['generate'] : [];
@@ -99,6 +109,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if (empty($receipt_date) || empty($month_from)) {
         $error = "تاریخ اور مہینہ از (Month From) ضروری ہیں۔";
+    } elseif ($months_count === null) {
+        // Keep validation message from parser in $error.
     } elseif (empty($generate_flags)) {
         $error = "براہ کرم رسید بنانے کے لئے کم از کم ایک دکاندار منتخب کریں۔ (Select at least one renter)";
     } else {
@@ -278,7 +290,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if (parts.length < 1 || parts.length > 2) return null;
 
         const token = parts[0].toLowerCase();
-        const year = (parts.length === 2 && /^\d{4}$/.test(parts[1])) ? parseInt(parts[1], 10) : new Date().getFullYear();
+        const hasYear = (parts.length === 2 && /^\d{4}$/.test(parts[1]));
+        const year = hasYear ? parseInt(parts[1], 10) : new Date().getFullYear();
 
         const monthMap = {
             'january': 1, 'jan': 1, 'jany': 1,
@@ -308,7 +321,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         };
 
         if (monthMap[token]) {
-            return { year: year, month: monthMap[token] };
+            return { year: year, month: monthMap[token], hasYear: hasYear };
         }
 
         return null;
@@ -316,9 +329,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     function getMonthsCount() {
         const start = parseMonthYear(monthFromInput.value);
-        if (!start) return 1;
+        if (!start) return null;
 
-        const end = parseMonthYear(monthToInput.value) || start;
+        let end = parseMonthYear(monthToInput.value);
+        if (!end) {
+            if ((monthToInput.value || '').trim() !== '') return null;
+            end = start;
+        }
+        if (!start.hasYear && end.hasYear) {
+            start.year = end.year;
+        }
+        if (start.hasYear && !end.hasYear) {
+            end.year = start.year;
+        }
         let startIndex = (start.year * 12) + start.month;
         let endIndex = (end.year * 12) + end.month;
 
@@ -332,7 +355,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     function recalcAllRows() {
         document.querySelectorAll('[id^="months_"]').forEach((el) => {
             const idx = el.id.replace('months_', '');
-            el.value = getMonthsCount();
+            const months = getMonthsCount();
+            el.value = months || '';
             calcRow(idx);
         });
     }
@@ -349,14 +373,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     function calcRow(index) {
         let rent = parseFloat(document.getElementById('rent_'+index).value) || 0;
         let months = getMonthsCount();
+        if (!months) {
+            document.getElementById('months_'+index).value = '';
+            document.getElementById('total_'+index).value = '';
+            calcBal(index);
+            return;
+        }
         document.getElementById('months_'+index).value = months;
         let arrears = parseFloat(document.getElementById('arrears_'+index).value) || 0;
         let total = (rent * months) + arrears;
         
         document.getElementById('total_'+index).value = total;
-        
-        // Auto-fill received amount assuming they are paying in full by default
-        document.getElementById('received_'+index).value = total;
         calcBal(index);
     }
 
