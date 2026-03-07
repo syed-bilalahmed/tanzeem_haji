@@ -118,6 +118,19 @@
                 </div>
                 <?php endif; ?>
 
+                <!-- Shop Rents Group -->
+                <div class="nav-group">
+                    <div class="nav-parent">
+                        <i class="fas fa-store"></i> دکانوں کا کرایہ (Shop Rents)
+                    </div>
+                    <div class="nav-children">
+                        <a href="renters.php" class="nav-sub"><i class="fas fa-users"></i> دکاندار (Shopkeepers)</a>
+                        <a href="generate_rent_receipt.php" class="nav-sub"><i class="fas fa-receipt"></i> کرایہ رسید (Single Receipt)</a>
+                        <a href="generate_rent_receipts_batch.php" class="nav-sub"><i class="fas fa-file-invoice-dollar"></i> ایک ساتھ رسیدیں (Batch Receipts)</a>
+                        <a href="rents_detail.php" class="nav-sub"><i class="fas fa-table"></i> تفصیلات (Rents Detail)</a>
+                    </div>
+                </div>
+
                 <!-- Record Services Group -->
                 <?php if(has_permission('funeral')): ?>
                 <div class="nav-group">
