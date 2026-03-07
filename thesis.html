@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tanzeem Management System - Technical Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({ startOnLoad: true });</script>
+    <style>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            line-height: 1.6;
+            color: #000;
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 40px;
+            text-align: justify;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #000;
+            font-family: Arial, sans-serif;
+            text-align: left;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24pt;
+            margin-bottom: 50px;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            font-size: 18pt;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+            margin-top: 40px;
+        }
+
+        h3 {
+            font-size: 14pt;
+            margin-top: 25px;
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        ul {
+            margin-bottom: 15px;
+        }
+
+        .cover-page {
+            text-align: center;
+            padding-top: 0;
+            page-break-after: always;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 90vh;
+            /* Default for screen */
+        }
+
+        .degree-info {
+            margin: 50px 0;
+            font-size: 16pt;
+            font-weight: bold;
+        }
+
+        .meta-info {
+            margin-top: auto;
+            font-size: 14pt;
+            font-weight: bold;
+        }
+
+        .mermaid {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        /* Print Styles - The "No Gap" Logic */
+        @media print {
+            @page {
+                size: A4;
+                margin: 15mm 20mm;
+                /* Standard print margins (Top/Bottom: 15mm, Sides: 20mm) */
+            }
+
+            body {
+                max-width: 100%;
+                margin: 0;
+                padding: 0;
+                font-size: 12pt;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            /* Cover Page - Full Height, No Margins */
+            .cover-page {
+                height: 100vh;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                border: none;
+            }
+
+            /* Typography & Spacing */
+            h2 {
+                page-break-before: always;
+                margin-top: 0;
+                padding-top: 0;
+            }
+
+            /* First H2 after cover doesn't forced break if unnecessary, but usually needed for Abstract */
+            h2:first-of-type {
+                page-break-before: auto;
+            }
+
+            p,
+            li {
+                orphans: 3;
+                widows: 3;
+            }
+
+            a {
+                text-decoration: none;
+                color: #000;
+            }
+
+            /* Tighten up flow */
+            h3 {
+                margin-top: 20px;
+                margin-bottom: 10px;
+            }
+
+            p {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Cover Page -->
+    <div class="cover-page">
+        <h1>Digitization and Management System<br>for<br>Tanzeem Aulad-e-Haji Bahadur</h1>
+
+        <div class="degree-info">
+            <p>Comprehensive Technical Documentation<br>&<br>Project Report</p>
+        </div>
+
+        <div class="meta-info">
+            <p>Prepared By:<br>Development Team</p>
+            <br><br>
+            <p>February 2026</p>
+        </div>
+    </div>
+
+    <!-- Abstract (Full Page) -->
+    <div
+        style="page-break-after: always; min-height: 85vh; display: flex; flex-direction: column; justify-content: center;">
+        <h2 style="text-align: center; margin-top: 0; text-transform: uppercase;">Abstract</h2>
+
+        <p>The <strong>Tanzeem Management System</strong> is a comprehensive web-based solution engineered to digitalize
+            and streamline the administrative, financial, and feedback operations of <em>Tanzeem Aulad-e-Haji
+                Bahadur</em>, a historic community organization in Kohat. Historically, the organization relied on
+            disparate manual record-keeping methods—including physical ledgers for "Khata" (daily accounts), handwritten
+            receipts for donations ("Chanda"), and manual processing of payroll and funeral services. These traditional
+            methods plagued the administration with challenges such as data redundancy, calculation errors, lack of
+            transparency, and the inability to generate real-time insights into the organization's financial health.</p>
+
+        <p>This project successfully addresses these systemic inefficiencies by deploying a secure, centralized platform
+            built on a robust <strong>LAMP stack</strong> (Linux, Apache, MySQL, PHP). The system features a modular
+            architecture that encompasses key operational areas: <strong>Financial Management</strong>, allowing for
+            precise tracking of income from diverse sources (Darbar, Andron, Beron) with denomination-based
+            verification; <strong>Payroll Automation</strong>, which simplifies salary generation and slip printing for
+            employees; and a digital <strong>Genealogy (Shajra) System</strong> to preserve the organizational lineage.
+        </p>
+
+        <p>A critical component of the system is its <strong>Role-Based Access Control (RBAC)</strong> mechanism, which
+            ensures data security by restricting sensitive financial inputs to authorized personnel while allowing
+            broader access for reporting. The Dashboard provides immediate visibility into key performance indicators
+            (KPIs) through interactive charts, tracking annual trends, monthly cash flows, and net capital in real-time.
+            Furthermore, the <strong>Funeral Management Module</strong> digitizes the record of deceased members and
+            automates the calculation of burial expenses and reimbursements, ensuring dignity and efficiency in
+            community services.</p>
+
+        <p>The implementation of this system has resulted in a paradigm shift for the Tanzeem, moving from reactive
+            manual troubleshooting to proactive digital management. It has significantly reduced administrative
+            overhead, eliminated math errors in financial reports, and provided a verifiable audit trail for all
+            transactions. This technical report details the development lifecycle, from requirement gathering and
+            database design to implementation and testing, demonstrating how modern web technologies can be effectively
+            harnessed to preserve tradition while enhancing operational capability.</p>
+
+        <p style="margin-top: 40px;"><strong>Keywords:</strong> <em>Management System, PHP, MySQL, Digitalization, RBAC,
+                Financial Tracking, Payroll Automation, Community Organization.</em></p>
+    </div>
+
+    <!-- Chapter 1 -->
+    <h2>Chapter 1: Introduction</h2>
+
+    <h3>1.1 Background</h3>
+    <p>Non-profit and community organizations often struggle with managing diverse operations such as fund collection,
+        expense tracking, and member records. <em>Tanzeem Aulad-e-Haji Bahadur</em>, a prominent community organization,
+        faced similar challenges with its manual "Khata" (Ledger) system, which made auditing and historical analysis
+        difficult.</p>
+
+    <h3>1.2 Problem Statement</h3>
+    <p>The existing manual system suffers from Data Inconsistency, Lack of Accessibility, Inefficiency in generating
+        reports, and Security Risks associated with physical records.</p>
+
+    <h3>1.3 Objectives</h3>
+    <ul>
+        <li>To develop a secure login system with Role-Based Access Control (RBAC).</li>
+        <li>To automate the recording and calculation of donations (Collections) and expenses.</li>
+        <li>To create a unified Monthly Ledger that automatically calculates net savings.</li>
+        <li>To digitize the organization's genealogical tree (Shajra).</li>
+    </ul>
+
+    <!-- Chapter 2 -->
+    <h2>Chapter 2: Methods & Architecture</h2>
+
+    <h3>2.1 System Architecture</h3>
+    <p>The system is built on a modular MVC-like architecture using PHP for server-side logic and MySQL for data
+        storage. The frontend utilizes HTML5, CSS3, and Bootstrap 5 for responsiveness.</p>
+
+    <div class="mermaid">
+        graph TD
+        User[User / Admin] -- HTTPS Request --> WebServer[Apache Web Server]
+        WebServer -- PHP Engine --> Controller[Controller Logic]
+        Controller -- SQL Queries --> Database[(MySQL Database)]
+        Database -- Data Result --> Controller
+        Controller -- HTML/JSON --> View[View Layer]
+        View -- Rendered Page --> User
+    </div>
+    <p style="text-align: center; font-style: italic;">Figure 2.1: High-Level System Architecture</p>
+
+    <h3>2.2 Authentication Flow</h3>
+    <p>Security is paramount. Users are authenticated against hashed passwords, and their sessions are managed with
+        role-based permissions.</p>
+
+    <div class="mermaid">
+        sequenceDiagram
+        actor User
+        participant Login Page
+        participant Auth System
+        participant Database
+        participant Dashboard
+
+        User->>Login Page: Enter Credentials
+        Login Page->>Auth System: POST /login.php
+        Auth System->>Database: Query User Table
+        Database-->>Auth System: Return Hash & Role
+        Auth System->>Auth System: Verify Password
+        alt Valid Credentials
+        Auth System->>Dashboard: Create Session & Redirect
+        else Invalid
+        Auth System->>Login Page: Show Error
+        end
+    </div>
+    <p style="text-align: center; font-style: italic;">Figure 2.2: Authentication Sequence Diagram</p>
+
+    <!-- Chapter 3 -->
+    <h2>Chapter 3: Module Implementation</h2>
+
+    <h3>3.1 Collections (Chanda) Module</h3>
+    <p>The Collections module simplifies the complex process of recording donations from multiple locations (Darbar,
+        Masjid Andron, Masjid Beron). Users enter note counts, and the system auto-calculates totals.</p>
+
+    <div class="mermaid">
+        flowchart LR
+        Input[User Inputs Notes] --> Validation{Client-Side Validation}
+        Validation -- Invalid --> Error[Show Alert]
+        Validation -- Valid --> Calc[Auto-Calculate Total]
+        Calc --> Submit[Submit to Server]
+        Submit --> DB[(Save to Database)]
+        DB --> Print[Generate Receipt]
+    </div>
+    <p style="text-align: center; font-style: italic;">Figure 3.1: Collection Process Flow</p>
+
+    <h3>3.2 Payroll Generation</h3>
+    <p>The system automates salary generation for employees, allowing bulk processing of monthly payslips.</p>
+
+    <div class="mermaid">
+        graph TD
+        A[Admin Selects Month] --> B[Fetch Active Employees]
+        B --> C[Apply Base Salary & Allowances]
+        C --> D{Adjustments?}
+        D -- Yes --> E[Manual Edit]
+        D -- No --> F[Finalize Batch]
+        F --> G[Save to Salary Table]
+        G --> H[Print All Slips]
+    </div>
+    <p style="text-align: center; font-style: italic;">Figure 3.2: Payroll Generation Workflow</p>
+
+    <!-- Chapter 4 -->
+    <h2>Chapter 4: Conclusion</h2>
+    <p>The Tanzeem Management System successfully digitizes the core operations of the organization. It resolves the
+        issues of manual calculation errors and provides a secure, accessible platform for financial management. Future
+        enhancements include cloud deployment and SMS integration.</p>
+
+    <div style="margin-top: 50px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 0.9em; color: #666; text-align: center;"
+        class="no-print">
+        <p><strong>Printing Instructions:</strong></p>
+        <p>1. Press <strong>Ctrl+P</strong> (Cmd+P).</p>
+        <p>2. Set <strong>Layout</strong> to "Portrait".</p>
+        <p>3. Set <strong>Paper Size</strong> to "A4".</p>
+        <p>4. Set <strong>Margins</strong> to "Default" or "None" (The document controls its own margins).</p>
+        <p>5. Ensure <strong>Background graphics</strong> is checked.</p>
+    </div>
+
+</body>
+
+</html>

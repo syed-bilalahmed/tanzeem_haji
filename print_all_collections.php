@@ -148,15 +148,15 @@ if (!$collections) {
 
                 $i = 1;
                 foreach($denoms as $d): 
-                    $qty_darbar = $data['darbar_'.$d]; $amt_darbar = $qty_darbar * $d;
+                    $qty_darbar = $data['darbar_'.$d] ?? 0; $amt_darbar = $qty_darbar * $d;
                     $totals['darbar_qty'] += $qty_darbar; $totals['darbar_amt'] += $amt_darbar;
                     $calc_darbar += $amt_darbar;
                     
-                    $qty_andron = $data['andron_'.$d]; $amt_andron = $qty_andron * $d;
+                    $qty_andron = $data['andron_'.$d] ?? 0; $amt_andron = $qty_andron * $d;
                     $totals['andron_qty'] += $qty_andron; $totals['andron_amt'] += $amt_andron;
                     $calc_andron += $amt_andron;
                     
-                    $qty_beron = $data['beron_'.$d]; $amt_beron = $qty_beron * $d;
+                    $qty_beron = $data['beron_'.$d] ?? 0; $amt_beron = $qty_beron * $d;
                     $totals['beron_qty'] += $qty_beron; $totals['beron_amt'] += $amt_beron;
                     $calc_beron += $amt_beron;
                     

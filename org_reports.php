@@ -26,9 +26,9 @@ for($m=1; $m<=12; $m++) {
     $cols = $st->fetchAll();
     $m_col = 0;
     foreach($cols as $col) {
-        $c_darbar = ($col['darbar_5000']*5000) + ($col['darbar_1000']*1000) + ($col['darbar_500']*500) + ($col['darbar_100']*100) + ($col['darbar_50']*50) + ($col['darbar_20']*20) + ($col['darbar_10']*10);
-        $c_indoor = ($col['andron_5000']*5000) + ($col['andron_1000']*1000) + ($col['andron_500']*500) + ($col['andron_100']*100) + ($col['andron_50']*50) + ($col['andron_20']*20) + ($col['andron_10']*10);
-        $c_outdoor = ($col['beron_5000']*5000) + ($col['beron_1000']*1000) + ($col['beron_500']*500) + ($col['beron_100']*100) + ($col['beron_50']*50) + ($col['beron_20']*20) + ($col['beron_10']*10);
+        $c_darbar = (($col['darbar_5000'] ?? 0)*5000) + (($col['darbar_1000'] ?? 0)*1000) + (($col['darbar_500'] ?? 0)*500) + (($col['darbar_100'] ?? 0)*100) + (($col['darbar_50'] ?? 0)*50) + (($col['darbar_20'] ?? 0)*20) + (($col['darbar_10'] ?? 0)*10);
+        $c_indoor = (($col['andron_5000'] ?? 0)*5000) + (($col['andron_1000'] ?? 0)*1000) + (($col['andron_500'] ?? 0)*500) + (($col['andron_100'] ?? 0)*100) + (($col['andron_50'] ?? 0)*50) + (($col['andron_20'] ?? 0)*20) + (($col['andron_10'] ?? 0)*10);
+        $c_outdoor = (($col['beron_5000'] ?? 0)*5000) + (($col['beron_1000'] ?? 0)*1000) + (($col['beron_500'] ?? 0)*500) + (($col['beron_100'] ?? 0)*100) + (($col['beron_50'] ?? 0)*50) + (($col['beron_20'] ?? 0)*20) + (($col['beron_10'] ?? 0)*10);
         
         // Fallback Logic: If denomination calculation is 0, use total columns
         if ($c_darbar == 0 && $col['darbar_total'] > 0) $c_darbar = $col['darbar_total'];

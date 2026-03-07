@@ -1,5 +1,7 @@
 <?php
 include 'config.php';
+include_once 'auth_session.php';
+if (!has_permission('ledger')) { die("<div style='text-align:center; margin-top:50px; font-size:20px; font-family:Arial;'>Access Denied. You do not have permission to view or edit the ledger.</div>"); }
 include 'header.php';
 
 // Auto Print if requested
@@ -23,6 +25,7 @@ $fixed_expense_sources = [
 
 // Handle Saving
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_sheet'])) {
+    if(!has_permission('ledger_edit')) { die("Access Denied to Edit Ledger."); }
     // Save Incomes
     if (isset($_POST['income'])) {
         foreach ($_POST['income'] as $row_data) {
@@ -434,7 +437,9 @@ $sum_exp = ['cash'=>0,'dargah'=>0,'qabristan'=>0,'masjid'=>0,'urs'=>0];
         </div>
 
         <div class="mt-4 text-center no-print">
+            <?php if(has_permission('ledger_edit')): ?>
             <button type="submit" name="save_sheet" class="btn btn-success">محفوظ کریں (Save All)</button>
+            <?php endif; ?>
             <button type="button" onclick="window.print()" class="btn btn-primary ms-3">پرنٹ (Print Sheet)</button>
         </div>
     </form>

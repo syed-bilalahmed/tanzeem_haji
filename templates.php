@@ -1,5 +1,7 @@
 <?php
 include 'config.php';
+include_once 'auth_session.php';
+if (!has_permission('salaries')) { die("<div style='text-align:center; margin-top:50px; font-size:20px; font-family:Arial;'>Access Denied. You do not have permission to manage salary templates.</div>"); }
 include 'header.php';
 
 $stmt = $pdo->query("SELECT * FROM salary_templates ORDER BY id ASC");

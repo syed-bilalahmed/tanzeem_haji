@@ -1,5 +1,7 @@
 <?php
 include 'config.php';
+include_once 'auth_session.php';
+if (!has_permission('ledger')) { die("<div style='text-align:center; margin-top:50px; font-size:20px; font-family:Arial;'>Access Denied. You do not have permission to view the ledger history.</div>"); }
 
 // AJAX Handler for history
 if (isset($_POST['year'])) {
@@ -61,6 +63,7 @@ include 'header.php';
 
 // Handle Delete Month
 if (isset($_GET['delete_month']) && isset($_GET['delete_year'])) {
+    if(!has_permission('ledger_edit')) { die("Access Denied to Delete Ledger."); }
     $m = $_GET['delete_month'];
     $y = $_GET['delete_year'];
     $pdo->prepare("DELETE FROM incomes WHERE MONTH(income_date) = ? AND YEAR(income_date) = ?")->execute([$m, $y]);
@@ -75,7 +78,9 @@ if (isset($_GET['delete_month']) && isset($_GET['delete_year'])) {
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;" class="no-print">
         <h4 class="mb-0">گوشوارہ جات کی فہرست</h4>
         <div>
+            <?php if(has_permission('ledger_edit')): ?>
             <a href="monthly_sheet.php" class="btn btn-success"><i class="fas fa-plus-circle"></i> نیا اندراج (New Ledger)</a>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -176,9 +181,15 @@ function loadHistory(year) {
                         <td class="${row.masjid_cls}">${row.masjid}</td>
                         <td class="${row.urs_cls}">${row.urs}</td>
                         <td class="no-print">
-                            <a href="monthly_sheet.php?month=${row.m}&year=${row.y}" class="btn btn-sm btn-primary">دیکھیں/ترمیم</a>
+                            <?php if(has_permission('ledger_edit')): ?>
+                            <a href="monthly_sheet.php?month=${row.m}&year=${row.y}" class="btn btn-sm btn-primary">ترمیم</a>
+                            <?php else: ?>
+                            <a href="monthly_sheet.php?month=${row.m}&year=${row.y}" class="btn btn-sm btn-primary">دیکھیں</a>
+                            <?php endif; ?>
                             <a href="monthly_sheet.php?month=${row.m}&year=${row.y}&print=1" class="btn btn-sm btn-info" target="_blank">پرنٹ</a>
+                            <?php if(has_permission('ledger_edit')): ?>
                             <a href="history.php?delete_month=${row.raw_m}&delete_year=${row.y}" class="btn btn-sm btn-danger" onclick="return confirm('کیا آپ اس مکمل مہینے کا ریکارڈ حذف کرنا چاہتے ہیں؟')">حذف</a>
+                            <?php endif; ?>
                         </td>
                     `;
                     tbody.appendChild(tr);

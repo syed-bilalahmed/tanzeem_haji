@@ -1,5 +1,7 @@
 <?php
 include 'config.php';
+include_once 'auth_session.php';
+if (!has_permission('funeral')) { die("<div style='text-align:center; margin-top:50px; font-size:20px; font-family:Arial;'>Access Denied. You do not have permission to view or manage funeral records.</div>"); }
 include 'header.php';
 
 $current_year = isset($_GET['year']) ? $_GET['year'] : date('Y');
@@ -32,14 +34,40 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS funeral_year_summary (
 
 // DELETE
 if (isset($_GET['delete_id'])) {
+    if(!has_permission('funeral_edit')) { die("Access Denied to Delete."); }
     $stmt = $pdo->prepare("DELETE FROM funeral_records WHERE id = ?");
     $stmt->execute([$_GET['delete_id']]);
+    echo "<script>window.location='funeral_record.php?year=$current_year';</script>";
+}
+
+// RETURN RECORD
+if (isset($_GET['return_id'])) {
+    if(!has_permission('funeral_edit')) { die("Access Denied to Edit."); }
+    $r_id = $_GET['return_id'];
+    $stmt = $pdo->prepare("SELECT * FROM funeral_records WHERE id = ? AND is_returned = 0");
+    $stmt->execute([$r_id]);
+    $rec = $stmt->fetch();
+    if ($rec) {
+        $stmt2 = $pdo->prepare("SELECT * FROM funeral_year_summary WHERE year = ?");
+        $stmt2->execute([$current_year]);
+        
+        if (!$stmt2->fetch()) {
+            $pdo->prepare("INSERT INTO funeral_year_summary (year) VALUES (?)")->execute([$current_year]);
+        }
+        
+        // Add current row's amounts to the totals
+        $pdo->prepare("UPDATE funeral_year_summary SET ret_digging=ret_digging+?, ret_tea=ret_tea+?, ret_truck=ret_truck+?, ret_other=ret_other+? WHERE year=?")
+            ->execute([$rec['digging'], $rec['tea'], $rec['truck'], $rec['other'], $current_year]);
+            
+        $pdo->prepare("UPDATE funeral_records SET is_returned=1 WHERE id=?")->execute([$r_id]);
+    }
     echo "<script>window.location='funeral_record.php?year=$current_year';</script>";
     exit;
 }
 
 // SAVE ALL
 if (isset($_POST['save_funeral'])) {
+    if(!has_permission('funeral_edit')) { die("Access Denied to Edit Funeral Records."); }
     // 1. Save Records
     if (isset($_POST['records'])) {
         foreach ($_POST['records'] as $r) {
@@ -105,12 +133,15 @@ if (!$summary) $summary = ['ret_digging'=>0, 'ret_tea'=>0, 'ret_truck'=>0, 'ret_
         <div class="print-container">
             
             <!-- HEADER -->
-            <div class="text-center mb-4 header-section">
+            <div class="text-center mb-2 header-section" style="position: relative; margin-top: -10px;">
+                <div class="print-small-date" style="position: absolute; top: 0; right: 0; font-family: 'Times New Roman', serif; font-weight: bold; font-size: 14px;">
+                    Date: <?php echo date('d-M-Y'); ?>
+                </div>
                 <div class="d-flex justify-content-center align-items-center">
-                    <img src="logo.jpeg" alt="Logo" style="height: 80px; margin-right: 15px;"> 
+                    <img src="logo.jpeg" alt="Logo" style="height: 70px; margin-right: 15px;"> 
                     <div class="text-start">
-                        <h2 style="font-weight: 900; font-family: 'Arial', sans-serif; text-transform: uppercase; margin: 0; letter-spacing: 1px;">TANZEEM-E-AULAAD HAZRAT HAJI BAHADAR, KOHAT</h2>
-                        <h4 style="font-weight: bold; text-decoration: underline; margin-top: 5px; font-family: 'Times New Roman', serif;">Details of Fund for Funeral and Burial Process (<?php echo $current_year; ?>)</h4>
+                        <h4 style="font-weight: bold; font-family: 'Arial', sans-serif; text-transform: uppercase; margin: 0;">TANZEEM-E-AULAAD HAZRAT HAJI BAHADAR, KOHAT</h4>
+                        <h5 style="font-weight: bold; text-decoration: underline; margin-top: 5px; font-family: 'Times New Roman', serif;">Details of Fund for Funeral and Burial Process (<?php echo $current_year; ?>)</h5>
                     </div>
                 </div>
             </div>
@@ -121,17 +152,17 @@ if (!$summary) $summary = ['ret_digging'=>0, 'ret_tea'=>0, 'ret_truck'=>0, 'ret_
                     <thead>
                         <tr>
                             <th width="3%">S.No</th>
-                            <th width="15%">Name of Deceased Person</th>
+                            <th width="18%">Name of Deceased Person</th>
                             <th width="8%">Date of Death</th>
-                            <th width="12%">Place of Death</th>
-                            <th width="5%">Kafan Kit</th>
-                            <th width="8%">Grave Digging <br><span class="urdu-text">قبر کی کھدائی</span></th>
-                            <th width="8%">Workers Tea & Juice</th>
-                            <th width="8%">Shazar Truck</th>
-                            <th width="8%">Other <br><span class="urdu-text">دیگر</span></th>
-                            <th width="8%">Total</th>
-                            <th width="15%">Remarks</th>
-                            <th width="3%" class="no-print">X</th>
+                            <th width="10%">Place of Death</th>
+                            <th width="4%">Kafan Kit</th>
+                            <th width="7%">Grave Digging <br><span class="urdu-text">قبر کی کھدائی</span></th>
+                            <th width="7%">Workers Tea & Juice</th>
+                            <th width="7%">Shazar Truck</th>
+                            <th width="7%">Other <br><span class="urdu-text">دیگر</span></th>
+                            <th width="7%">Total</th>
+                            <th width="18%">Remarks</th>
+                            <th width="4%" class="no-print text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -145,43 +176,58 @@ if (!$summary) $summary = ['ret_digging'=>0, 'ret_tea'=>0, 'ret_truck'=>0, 'ret_
                             $s_death_date = htmlspecialchars($rec['death_date']);
                             $s_place = htmlspecialchars($rec['place']);
                             $s_kafan = htmlspecialchars($rec['kafan_kit']);
-                            $s_remarks = htmlspecialchars($rec['remarks']);
+                            $s_remarks = htmlspecialchars($rec['remarks']); // RESTORED
+                            // Disable inputs if no edit permission
+                            $ro = has_permission('funeral_edit') ? '' : 'readonly';
+                            $dis = has_permission('funeral_edit') ? '' : 'disabled';
                         ?>
                         <tr>
                             <td class="text-center fw-bold"><?php echo $rowCount; ?></td>
                             <td>
+                                <?php if(has_permission('funeral_edit')): ?>
                                 <input type="hidden" name="records[<?php echo $idx; ?>][id]" value="<?php echo $rec['id']; ?>">
-                                <input type="text" name="records[<?php echo $idx; ?>][name]" value="<?php echo $s_name; ?>" class="form-control-plaintext table-input" placeholder="">
+                                <?php endif; ?>
+                                <input type="text" name="records[<?php echo $idx; ?>][name]" value="<?php echo $s_name; ?>" class="form-control-plaintext table-input" placeholder="" <?php echo $ro; ?>>
                             </td>
-                            <td><input type="text" name="records[<?php echo $idx; ?>][death_date]" value="<?php echo $s_death_date; ?>" class="form-control-plaintext table-input text-center" placeholder="YYYY-MM-DD"></td>
-                            <td><input type="text" name="records[<?php echo $idx; ?>][place]" value="<?php echo $s_place; ?>" class="form-control-plaintext table-input" placeholder=""></td>
-                            <td><input type="text" name="records[<?php echo $idx; ?>][kafan_kit]" value="<?php echo $s_kafan; ?>" class="form-control-plaintext table-input text-center" placeholder="-"></td>
-                            <td><input type="number" step="0.01" name="records[<?php echo $idx; ?>][digging]" value="<?php echo $rec['digging']; ?>" class="form-control-plaintext table-input text-center amt-field" data-col="digging" placeholder=""></td>
-                            <td><input type="number" step="0.01" name="records[<?php echo $idx; ?>][tea]" value="<?php echo $rec['tea']; ?>" class="form-control-plaintext table-input text-center amt-field" data-col="tea" placeholder=""></td>
-                            <td><input type="number" step="0.01" name="records[<?php echo $idx; ?>][truck]" value="<?php echo $rec['truck']; ?>" class="form-control-plaintext table-input text-center amt-field" data-col="truck" placeholder=""></td>
-                            <td><input type="number" step="0.01" name="records[<?php echo $idx; ?>][other]" value="<?php echo $rec['other']; ?>" class="form-control-plaintext table-input text-center amt-field" data-col="other" placeholder=""></td>
+                            <td><input type="date" name="records[<?php echo $idx; ?>][death_date]" value="<?php echo $s_death_date; ?>" class="form-control-plaintext table-input text-center" <?php echo $ro; ?>></td>
+                            <td><input type="text" name="records[<?php echo $idx; ?>][place]" value="<?php echo $s_place; ?>" class="form-control-plaintext table-input" placeholder="" <?php echo $ro; ?>></td>
+                            <td><input type="text" name="records[<?php echo $idx; ?>][kafan_kit]" value="<?php echo $s_kafan; ?>" class="form-control-plaintext table-input text-center" placeholder="-" <?php echo $ro; ?>></td>
+                            <td><input type="number" step="0.01" name="records[<?php echo $idx; ?>][digging]" value="<?php echo  $rec['digging']; ?>" class="form-control-plaintext table-input text-center amt-field" data-col="digging" placeholder="" <?php echo $ro; ?>></td>
+                            <td><input type="number" step="0.01" name="records[<?php echo $idx; ?>][tea]" value="<?php echo $rec['tea']; ?>" class="form-control-plaintext table-input text-center amt-field" data-col="tea" placeholder="" <?php echo $ro; ?>></td>
+                            <td><input type="number" step="0.01" name="records[<?php echo $idx; ?>][truck]" value="<?php echo $rec['truck']; ?>" class="form-control-plaintext table-input text-center amt-field" data-col="truck" placeholder="" <?php echo $ro; ?>></td>
+                            <td><input type="number" step="0.01" name="records[<?php echo $idx; ?>][other]" value="<?php echo $rec['other']; ?>" class="form-control-plaintext table-input text-center amt-field" data-col="other" placeholder="" <?php echo $ro; ?>></td>
                             <td><input type="text" class="form-control-plaintext table-input text-center fw-bold total-field" readonly tabIndex="-1"></td>
-                            <td><input type="text" name="records[<?php echo $idx; ?>][remarks]" value="<?php echo $s_remarks; ?>" class="form-control-plaintext table-input" placeholder=""></td>
-                            <td class="no-print text-center"><a href="?delete_id=<?php echo $rec['id']; ?>&year=<?php echo $current_year; ?>" class="text-danger" onclick="return confirm('Delete this record?')"><i class="fas fa-times"></i></a></td>
+                            <td><input type="text" name="records[<?php echo $idx; ?>][remarks]" value="<?php echo $s_remarks; ?>" class="form-control-plaintext table-input" placeholder="" <?php echo $ro; ?>></td>
+                            <td class="no-print text-center">
+                                <?php if(has_permission('funeral_edit')): ?>
+                                <?php if (isset($rec['is_returned']) && $rec['is_returned']): ?>
+                                    <span class="badge bg-success" style="font-size: 0.7em;"><i class="fas fa-check"></i> Ret</span>
+                                <?php elseif ($rec['id']): ?>
+                                    <a href="?return_id=<?php echo $rec['id']; ?>&year=<?php echo $current_year; ?>" class="btn btn-sm btn-outline-warning p-1" title="Return Amount" onclick="return confirm('Return this amount to the summary?')"><i class="fas fa-undo"></i></a>
+                                <?php endif; ?>
+                                <a href="?delete_id=<?php echo $rec['id']; ?>&year=<?php echo $current_year; ?>" class="btn btn-sm btn-outline-danger p-1 ms-1" title="Delete" onclick="return confirm('Delete this record?')"><i class="fas fa-times"></i></a>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
 
                         <?php 
-                        // 2. Render Empty Rows to reach minimum 5 or just add 1 empty row at end
-                        // Requested: "Default 5 rows"
-                        $minRows = 5;
-                        $rowsToAdd = max($minRows - $rowCount, 1); // Ensure at least 5 total, or add 1 if already 5
-                        if ($rowCount >= 5) $rowsToAdd = 1; // If we have 15 records, add 1 empty new one
+                        if(has_permission('funeral_edit')):
+                            // 2. Render Empty Rows to reach minimum 5 or just add 1 empty row at end
+                            // Requested: "Default 5 rows"
+                            $minRows = 5;
+                            $rowsToAdd = max($minRows - $rowCount, 1); // Ensure at least 5 total, or add 1 if already 5
+                            if ($rowCount >= 5) $rowsToAdd = 1; // If we have 15 records, add 1 empty new one
 
-                        for($i=0; $i<$rowsToAdd; $i++): 
-                            $newIdx = 9999 + $i; // Temp logic for index
+                            for($i=0; $i<$rowsToAdd; $i++): 
+                                $newIdx = 9999 + $i; // Temp logic for index
                         ?>
                         <tr>
                             <td class="text-center fw-bold"><?php echo ++$rowCount; ?></td>
                             <td>
                                 <input type="text" name="records[<?php echo $newIdx; ?>][name]" class="form-control-plaintext table-input" placeholder="">
                             </td>
-                            <td><input type="text" name="records[<?php echo $newIdx; ?>][death_date]" class="form-control-plaintext table-input text-center" placeholder="YYYY-MM-DD"></td>
+                            <td><input type="date" name="records[<?php echo $newIdx; ?>][death_date]" value="<?php echo date('Y-m-d'); ?>" class="form-control-plaintext table-input text-center"></td>
                             <td><input type="text" name="records[<?php echo $newIdx; ?>][place]" class="form-control-plaintext table-input" placeholder=""></td>
                             <td><input type="text" name="records[<?php echo $newIdx; ?>][kafan_kit]" class="form-control-plaintext table-input text-center" placeholder="-"></td>
                             <td><input type="number" step="0.01" name="records[<?php echo $newIdx; ?>][digging]" class="form-control-plaintext table-input text-center amt-field" data-col="digging" placeholder=""></td>
@@ -192,13 +238,15 @@ if (!$summary) $summary = ['ret_digging'=>0, 'ret_tea'=>0, 'ret_truck'=>0, 'ret_
                             <td><input type="text" name="records[<?php echo $newIdx; ?>][remarks]" class="form-control-plaintext table-input" placeholder=""></td>
                             <td class="no-print"></td>
                         </tr>
-                        <?php endfor; ?>
+                        <?php endfor; endif; ?>
                     </tbody>
                     <tfoot>
                         <tr class="no-print">
                             <td colspan="12" class="text-start">
+                                <?php if(has_permission('funeral_edit')): ?>
                                 <button type="button" class="btn btn-sm btn-success" onclick="addRecordRow()">+ Add Row</button>
                                 <button type="submit" name="save_funeral" class="btn btn-sm btn-primary ms-2">Save All Data</button>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     </tfoot>
@@ -206,10 +254,11 @@ if (!$summary) $summary = ['ret_digging'=>0, 'ret_tea'=>0, 'ret_truck'=>0, 'ret_
             </div>
 
             <!-- SUMMARY TABLE -->
-            <div class="mt-4">
+            <div class="mt-4 print-new-page">
                 <h4 style="font-weight: bold; font-family: 'Arial', sans-serif; text-decoration: underline; margin-bottom: 15px;">Summary of Funeral and Burial (<?php echo $current_year; ?>) :</h4>
-                <table class="table custom-table text-center" id="summaryTable">
-                    <thead>
+                <div class="table-responsive">
+                    <table class="table custom-table text-center" id="summaryTable">
+                        <thead>
                         <tr class="bg-white">
                             <th width="15%" style="border:none;"></th>
                             <th width="10%">No. of death</th>
@@ -232,15 +281,15 @@ if (!$summary) $summary = ['ret_digging'=>0, 'ret_tea'=>0, 'ret_truck'=>0, 'ret_
                             <td id="sum_other">Rs.0/-</td>
                             <td id="sum_grand_total">Rs.0/-</td>
                         </tr>
-                        <tr class="fw-bold text-danger">
+                        <tr class="fw-bold" style="color: #1b5e20;">
                             <td class="text-start">Returned Amount</td>
                             <td>-</td>
                             <td>-</td>
-                            <td><input type="number" step="0.01" name="ret_digging" value="<?php echo $summary['ret_digging']; ?>" class="form-control-plaintext text-center fw-bold text-danger ret-field" id="ret_digging" placeholder="0"></td>
-                            <td><input type="number" step="0.01" name="ret_tea" value="<?php echo $summary['ret_tea']; ?>" class="form-control-plaintext text-center fw-bold text-danger ret-field" id="ret_tea" placeholder="0"></td>
-                            <td><input type="number" step="0.01" name="ret_truck" value="<?php echo $summary['ret_truck']; ?>" class="form-control-plaintext text-center fw-bold text-danger ret-field" id="ret_truck" placeholder="0"></td>
-                            <td><input type="number" step="0.01" name="ret_other" value="<?php echo $summary['ret_other']; ?>" class="form-control-plaintext text-center fw-bold text-danger ret-field" id="ret_other" placeholder="0"></td>
-                            <td id="ret_total">Rs.0/-</td>
+                            <td><input type="number" step="0.01" name="ret_digging" value="<?php echo $summary['ret_digging']; ?>" class="form-control-plaintext text-center fw-bold text-success ret-field" id="ret_digging" placeholder="0"></td>
+                            <td><input type="number" step="0.01" name="ret_tea" value="<?php echo $summary['ret_tea']; ?>" class="form-control-plaintext text-center fw-bold text-success ret-field" id="ret_tea" placeholder="0"></td>
+                            <td><input type="number" step="0.01" name="ret_truck" value="<?php echo $summary['ret_truck']; ?>" class="form-control-plaintext text-center fw-bold text-success ret-field" id="ret_truck" placeholder="0"></td>
+                            <td><input type="number" step="0.01" name="ret_other" value="<?php echo $summary['ret_other']; ?>" class="form-control-plaintext text-center fw-bold text-success ret-field" id="ret_other" placeholder="0"></td>
+                            <td id="ret_total" class="text-success">Rs.0/-</td>
                         </tr>
                         <tr class="fw-bold" style="background-color: #f8f9fa;">
                             <td class="text-start" style="font-size: 1.1em;">Total Expense</td>
@@ -254,22 +303,23 @@ if (!$summary) $summary = ['ret_digging'=>0, 'ret_tea'=>0, 'ret_truck'=>0, 'ret_
                         </tr>
                     </tbody>
                 </table>
+                </div>
             </div>
 
             <!-- SIGNATURES -->
-            <div class="mt-5 pt-5">
-                <div class="d-flex justify-content-between align-items-end" style="font-weight: bold; font-family: 'Times New Roman', serif;">
+            <div class="mt-4 pt-4 signatures-section">
+                <div class="d-flex justify-content-between align-items-end" style="font-weight: bold; font-family: 'Times New Roman', serif; font-size: 14px;">
                     <div style="text-align: left;">
-                        Fawad Hussain: <span style="border-bottom: 1px solid #000; display: inline-block; width: 150px;"></span>
+                        Fawad Hussain: <span style="border-bottom: 1px solid #000; display: inline-block; width: 130px;"></span>
                     </div>
                     <div style="text-align: center;">
-                        Syed Haris Shah <span style="border-bottom: 1px solid #000; display: inline-block; width: 150px;"></span>
+                        Syed Haris Shah <span style="border-bottom: 1px solid #000; display: inline-block; width: 130px;"></span>
                     </div>
                     <div style="text-align: center;">
-                        M Kamil Shah: <span style="border-bottom: 1px solid #000; display: inline-block; width: 150px;"></span>
+                        M Kamil Shah: <span style="border-bottom: 1px solid #000; display: inline-block; width: 130px;"></span>
                     </div>
                     <div style="text-align: right;">
-                         Syed AfiatHussain shah: <span style="border-bottom: 1px solid #000; display: inline-block; width: 150px;"></span>
+                         Syed AfiatHussain shah: <span style="border-bottom: 1px solid #000; display: inline-block; width: 130px;"></span>
                     </div>
                 </div>
             </div>
@@ -301,6 +351,13 @@ if (!$summary) $summary = ['ret_digging'=>0, 'ret_tea'=>0, 'ret_truck'=>0, 'ret_
         margin-bottom: 0;
     }
 
+    /* Force horizontal scroll ONLY on smaller screens to avoid squishing */
+    @media screen and (max-width: 991px) {
+        .custom-table {
+            min-width: 1000px; 
+        }
+    }
+
     .custom-table th, .custom-table td {
         border: 1px solid #000 !important;
         padding: 4px 6px; /* Tight padding for compact rows */
@@ -330,23 +387,110 @@ if (!$summary) $summary = ['ret_digging'=>0, 'ret_tea'=>0, 'ret_truck'=>0, 'ret_
 
     /* Column Width Adjustments */
     #summaryTable th, #summaryTable td {
-        padding: 8px;
-        font-size: 14px;
+        padding: 5px;
+        font-size: 13px;
     }
 
+    /* PC View Wide Layout */
+    @media screen and (min-width: 992px) {
+        .card {
+            max-width: 100% !important;
+            width: 100%;
+        }
+        .content-wrapper {
+            max-width: 100% !important;
+            padding: 10px;
+        }
+    }
+
+    /* Print Formatting */
     @media print {
-        @page { size: A4 landscape; margin: 5mm; }
-        body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background: white !important; }
+        @page { 
+            size: 13in 8.5in; /* Legal Landscape */
+            margin-top: 5mm; 
+            margin-bottom: 10mm;
+            margin-left: 5mm;
+            margin-right: 5mm;
+        }
+        body, html, .main-wrapper, .content-wrapper, .container, .card, .card-body { 
+            background: white !important; 
+            background-color: white !important; 
+        }
+        body { 
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important; 
+            font-size: 12pt;
+        }
         .no-print { display: none !important; }
         .card { border: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
         .navbar, .sidebar { display: none !important; }
         .content-wrapper { margin: 0 !important; padding: 0 !important; width: 100% !important; }
         
+        table { page-break-inside: auto; width: 100% !important; }
+        tr    { page-break-inside: avoid; page-break-after: auto; }
+        thead { display: table-header-group; }
+        tfoot { display: table-footer-group; }
+        
+        .print-new-page { page-break-before: always; margin-top: 20px !important; }
+        .print-small-date { font-size: 10px !important; }
+        
         /* Ensure inputs print their values */
-        input { border: none !important; box-shadow: none !important; }
+        input, select, textarea { 
+            border: none !important; 
+            box-shadow: none !important; 
+            background: transparent !important; 
+            color: #000 !important;
+            padding: 0 !important;
+        }
+        
+        /* Specifically target date inputs to look normal on print */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            display: none !important;
+        }
+        input[type="date"]::-webkit-inner-spin-button,
+        input[type="date"]::-webkit-clear-button {
+            display: none !important;
+        }
+        
+        /* Keep signatures attached */
+        .signatures-section {
+            page-break-inside: avoid;
+            margin-top: 30px !important;
+        }
+
         /* Hide placeholders on print */
         input::placeholder { color: transparent !important; }
-        .text-danger { color: #000 !important; } /* Clean print */
+        .text-danger { color: #000 !important; } /* Clean print for danger */
+        .text-success, [style*="color: #1b5e20"] { color: #1b5e20 !important; } /* Ensure green prints */
+        
+        /* Make things clear and visible */
+        .header-section h4 { font-size: 18pt !important; }
+        .header-section h5 { font-size: 16pt !important; }
+        
+        /* Table layout optimizations for Legal Landscape */
+        .custom-table { table-layout: fixed; width: 100% !important; }
+        .custom-table th { 
+            font-size: 11pt !important; 
+            padding: 4px !important; 
+            overflow: hidden;
+            font-weight: bold !important;
+        }
+        .custom-table td { 
+            font-size: 11pt !important; 
+            padding: 4px !important; 
+            white-space: normal !important; /* Allow wrapping */
+            word-wrap: break-word !important; 
+            overflow: hidden;
+        }
+        .table-input { 
+            font-size: 11pt !important; 
+            font-weight: normal !important; /* Regular columns normal */
+            white-space: normal !important; 
+            width: 100% !important; 
+        }
+        .total-field {
+            font-weight: bold !important; /* Total bold */
+        }
     }
 </style>
 
@@ -426,7 +570,7 @@ if (!$summary) $summary = ['ret_digging'=>0, 'ret_tea'=>0, 'ret_truck'=>0, 'ret_
         tr.innerHTML = `
             <td class="text-center fw-bold">${rowCount}</td>
             <td><input type="text" name="records[new_${uniqueIdx}][name]" class="form-control-plaintext table-input" placeholder=""></td>
-            <td><input type="text" name="records[new_${uniqueIdx}][death_date]" class="form-control-plaintext table-input text-center" placeholder="YYYY-MM-DD"></td>
+            <td><input type="date" name="records[new_${uniqueIdx}][death_date]" value="<?php echo date('Y-m-d'); ?>" class="form-control-plaintext table-input text-center"></td>
             <td><input type="text" name="records[new_${uniqueIdx}][place]" class="form-control-plaintext table-input" placeholder=""></td>
             <td><input type="text" name="records[new_${uniqueIdx}][kafan_kit]" class="form-control-plaintext table-input text-center" placeholder="-"></td>
             <td><input type="number" step="0.01" name="records[new_${uniqueIdx}][digging]" class="form-control-plaintext table-input text-center amt-field" data-col="digging" placeholder=""></td>

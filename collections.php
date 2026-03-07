@@ -1,7 +1,6 @@
-<?php
 include 'config.php';
-
-// AJAX Handler for fetching collections by year
+include_once 'auth_session.php';
+if (!has_permission('collections')) { die("<div style='text-align:center; margin-top:50px; font-size:20px; font-family:Arial;'>Access Denied. You do not have permission to view collections.</div>"); }
 if (isset($_POST['year'])) {
     $year = $_POST['year'];
     
@@ -13,9 +12,9 @@ if (isset($_POST['year'])) {
     foreach($cols as $index => $col) {
         // Calculation Logic (Same as before)
         $calc_total = 0;
-        $calc_total += ($col['darbar_5000']*5000) + ($col['darbar_1000']*1000) + ($col['darbar_500']*500) + ($col['darbar_100']*100) + ($col['darbar_50']*50) + ($col['darbar_20']*20) + ($col['darbar_10']*10);
-        $calc_total += ($col['andron_5000']*5000) + ($col['andron_1000']*1000) + ($col['andron_500']*500) + ($col['andron_100']*100) + ($col['andron_50']*50) + ($col['andron_20']*20) + ($col['andron_10']*10);
-        $calc_total += ($col['beron_5000']*5000) + ($col['beron_1000']*1000) + ($col['beron_500']*500) + ($col['beron_100']*100) + ($col['beron_50']*50) + ($col['beron_20']*20) + ($col['beron_10']*10);
+        $calc_total += (($col['darbar_5000'] ?? 0)*5000) + (($col['darbar_1000'] ?? 0)*1000) + (($col['darbar_500'] ?? 0)*500) + (($col['darbar_100'] ?? 0)*100) + (($col['darbar_50'] ?? 0)*50) + (($col['darbar_20'] ?? 0)*20) + (($col['darbar_10'] ?? 0)*10);
+        $calc_total += (($col['andron_5000'] ?? 0)*5000) + (($col['andron_1000'] ?? 0)*1000) + (($col['andron_500'] ?? 0)*500) + (($col['andron_100'] ?? 0)*100) + (($col['andron_50'] ?? 0)*50) + (($col['andron_20'] ?? 0)*20) + (($col['andron_10'] ?? 0)*10);
+        $calc_total += (($col['beron_5000'] ?? 0)*5000) + (($col['beron_1000'] ?? 0)*1000) + (($col['beron_500'] ?? 0)*500) + (($col['beron_100'] ?? 0)*100) + (($col['beron_50'] ?? 0)*50) + (($col['beron_20'] ?? 0)*20) + (($col['beron_10'] ?? 0)*10);
         
         $man_total = ($col['darbar_total'] ?? 0) + ($col['andron_total'] ?? 0) + ($col['beron_total'] ?? 0);
         $grand_total = ($calc_total > 0 && $calc_total >= $man_total) ? $calc_total : $man_total;
@@ -34,15 +33,17 @@ if (isset($_POST['year'])) {
     exit;
 }
 
-include 'header.php';
-
 // Handle Delete
 if (isset($_GET['delete'])) {
+    if(!has_permission('collections_edit')) { die("Access Denied to Delete."); }
     $id = $_GET['delete'];
     $stmt = $pdo->prepare("DELETE FROM collections WHERE id = ?");
     $stmt->execute([$id]);
-    echo "<script>window.location.href='collections.php?msg=deleted';</script>";
+    header("Location: collections.php?msg=deleted");
+    exit;
 }
+
+include 'header.php';
 ?>
 
 <?php if(isset($_GET['msg'])): ?>
@@ -61,7 +62,9 @@ if (isset($_GET['delete'])) {
         <h3>چندہ ریکارڈز (Collections)</h3>
         <div>
             <a href="print_all_collections.php" class="btn btn-warning" target="_blank" style="margin-right:5px;"><i class="fas fa-print"></i> تمام پرنٹ کریں (Print All)</a>
-            <a href="add_collection.php" class="btn btn-success"><i class="fas fa-plus"></i> نیا اندراج (New Collection)</a>
+            <?php if(has_permission('collections_edit')): ?>
+            <a href="add_collection.php" class="btn btn-success"><i class="fas fa-plus-circle"></i> نیا اندراج (Add New)</a>
+            <?php endif; ?>
         </div>
     </div>
     
@@ -150,6 +153,10 @@ function loadYear(year) {
             } else {
                 data.forEach(row => {
                     const tr = document.createElement('tr');
+                    let deleteButtonHtml = '';
+                    if (row.can_edit) { // Use the permission status passed from PHP
+                        deleteButtonHtml = `<a href="collections.php?delete=${row.id}" class="btn btn-sm btn-danger" onclick="return confirm('واقعی حذف کرنا چاہتے ہیں؟')">حذف</a>`;
+                    }
                     tr.innerHTML = `
                         <td>${row.index}</td>
                         <td>${row.date}</td>
@@ -157,7 +164,7 @@ function loadYear(year) {
                         <td>
                             <a href="edit_collection.php?id=${row.id}" class="btn btn-sm btn-warning me-1">ترمیم (Edit)</a>
                             <a href="view_report.php?id=${row.id}" class="btn btn-sm btn-info text-white me-1" target="_blank">رپورٹ (View)</a>
-                            <a href="collections.php?delete=${row.id}" class="btn btn-sm btn-danger" onclick="return confirm('واقعی حذف کرنا چاہتے ہیں؟')">حذف</a>
+                            ${deleteButtonHtml}
                         </td>
                     `;
                     tbody.appendChild(tr);

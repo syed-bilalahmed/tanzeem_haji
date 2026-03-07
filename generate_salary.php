@@ -57,6 +57,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             );
             
             // Store the full range string in payment_month so it shows correctly in list
+            // Prevent Duplicates: Delete existing slip for this employee and month
+            $pdo->prepare("DELETE FROM salary_payments WHERE employee_id=? AND payment_month=?")->execute([$emp['id'], $month_display . " " . $year]);
+
             $insert = $pdo->prepare("INSERT INTO salary_payments (employee_id, payment_month, payment_year, amount, details_text) VALUES (?, ?, ?, ?, ?)");
             $insert->execute([$emp['id'], $month_display . " " . $year, $year, $amount, $details]);
             $count++;

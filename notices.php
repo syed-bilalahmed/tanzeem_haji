@@ -1,9 +1,12 @@
 <?php
 include 'config.php';
+include_once 'auth_session.php';
+if (!has_permission('notices')) { die("<div style='text-align:center; margin-top:50px; font-size:20px; font-family:Arial;'>Access Denied. You do not have permission to view notices.</div>"); }
 include 'header.php';
 
 // Handle Delete
 if (isset($_GET['delete'])) {
+    if(!has_permission('notices_edit')) { die("Access Denied to Delete Notice."); }
     $id = $_GET['delete'];
     $stmt = $pdo->prepare("DELETE FROM notices WHERE id = ?");
     $stmt->execute([$id]);
@@ -20,7 +23,9 @@ $notices = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <h3>نوٹیفکیشن / رسید ریکارڈز (All Notices)</h3>
         <div>
             <a href="print_all_notices.php" class="btn btn-warning" target="_blank" style="margin-right:5px;"><i class="fas fa-print"></i> تمام پرنٹ کریں (Print All)</a>
+            <?php if(has_permission('notices_edit')): ?>
             <a href="add_notice.php" class="btn btn-success"><i class="fas fa-plus"></i> نیا اندراج (New Notice)</a>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -43,8 +48,10 @@ $notices = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
                 <div style="text-align:left;">
                     <a href="generate_notice_pdf.php?id=<?php echo $notice['id']; ?>" class="btn btn-primary btn-sm" target="_blank"><i class="fas fa-eye"></i> View PDF</a>
+                    <?php if(has_permission('notices_edit')): ?>
                     <a href="edit_notice.php?id=<?php echo $notice['id']; ?>" class="btn btn-info btn-sm"><i class="fas fa-edit"></i> Edit</a>
                     <a href="notices.php?delete=<?php echo $notice['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Delete this notice?')"><i class="fas fa-trash"></i> Delete</a>
+                    <?php endif; ?>
                 </div>
             </div>
             <?php endforeach; ?>

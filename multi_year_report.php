@@ -1,5 +1,7 @@
 <?php
 include 'config.php';
+include_once 'auth_session.php';
+if (!has_permission('reports')) { die("<div style='text-align:center; margin-top:50px; font-size:20px; font-family:Arial;'>Access Denied. You do not have permission to view multi-year reports.</div>"); }
 include 'header.php';
 
 $start_year = isset($_GET['start_year']) ? $_GET['start_year'] : date('Y');

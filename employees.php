@@ -1,16 +1,20 @@
 <?php
 include 'config.php';
+include_once 'auth_session.php';
+if (!has_permission('salaries')) { die("<div style='text-align:center; margin-top:50px; font-size:20px; font-family:Arial;'>Access Denied. You do not have permission to view employees.</div>"); }
+
+if (isset($_GET['delete'])) {
+    $id = $_GET['delete'];
+    $pdo->prepare("UPDATE salary_employees SET status='inactive' WHERE id=?")->execute([$id]);
+    header("Location: employees.php");
+    exit;
+}
+
 include 'header.php';
 
 // Fetch Active Employees
 $stmt = $pdo->query("SELECT * FROM salary_employees WHERE status='active' ORDER BY id ASC");
 $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-if (isset($_GET['delete'])) {
-    $id = $_GET['delete'];
-    $pdo->prepare("UPDATE salary_employees SET status='inactive' WHERE id=?")->execute([$id]);
-    echo "<script>window.location.href='employees.php';</script>";
-}
 ?>
 
 <div class="card">

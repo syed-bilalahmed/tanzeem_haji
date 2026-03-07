@@ -11,9 +11,23 @@ $stmt = $pdo->prepare("
     FROM salary_payments sp 
     LEFT JOIN salary_employees se ON sp.employee_id = se.id
     WHERE sp.payment_month = ?
+    ORDER BY sp.id ASC
 ");
 $stmt->execute([$month]);
-$slips = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$all_slips = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Deduplicate by employee_id, keeping the latest one (highest ID)
+$slips = [];
+foreach ($all_slips as $slip) {
+    if ($slip['employee_id']) {
+        $slips[$slip['employee_id']] = $slip;
+    } else {
+        // Fallback if employee_id is null for some reason
+        $slips[] = $slip;
+    }
+}
+// Reset keys just in case
+$slips = array_values($slips);
 
 if (!$slips) {
     die("No records found for this month.");
@@ -124,11 +138,13 @@ if (!$slips) {
         <div class="slip-body">
             <?php 
             // Replace date placeholders with actual creation date
-            $formatted_date = date('d/m/Y', strtotime($slip['created_at']));
+            // Replace date placeholders with ACTUAL PRINT DATE (Today)
+            $formatted_date = date('d/m/Y'); 
             $text = $slip['details_text'];
             
             // Regex to find things like "تاریخ: __/__/____" or similar underscores
-            $text = preg_replace('/تاریخ\s*[:։]\s*[_]+(\/[_]+)?(\/[_]+)?/', 'تاریخ: ' . $formatted_date, $text);
+            // Also matches simple "Datum: _______"
+            $text = preg_replace('/(تاریخ|Date|Dated)\s*[:։]?\s*[_]+(\/[_]+)?(\/[_]+)?/u', '$1: ' . $formatted_date, $text);
             
             echo $text; 
             ?>

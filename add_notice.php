@@ -1,5 +1,7 @@
 <?php
 include 'config.php';
+include_once 'auth_session.php';
+if (!has_permission('notices_edit')) { die("<div style='text-align:center; margin-top:50px; font-size:20px; font-family:Arial;'>Access Denied. You do not have permission to manage notices.</div>"); }
 include 'header.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {

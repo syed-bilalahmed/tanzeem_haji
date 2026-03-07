@@ -29,9 +29,9 @@ $total_col = 0;
 foreach($cols as $col) {
     // Calc from Denoms
     $calc = 0;
-    $calc += ($col['darbar_5000']*5000) + ($col['darbar_1000']*1000) + ($col['darbar_500']*500) + ($col['darbar_100']*100) + ($col['darbar_50']*50) + ($col['darbar_20']*20) + ($col['darbar_10']*10);
-    $calc += ($col['andron_5000']*5000) + ($col['andron_1000']*1000) + ($col['andron_500']*500) + ($col['andron_100']*100) + ($col['andron_50']*50) + ($col['andron_20']*20) + ($col['andron_10']*10);
-    $calc += ($col['beron_5000']*5000) + ($col['beron_1000']*1000) + ($col['beron_500']*500) + ($col['beron_100']*100) + ($col['beron_50']*50) + ($col['beron_20']*20) + ($col['beron_10']*10);
+    $calc += (($col['darbar_5000'] ?? 0)*5000) + (($col['darbar_1000'] ?? 0)*1000) + (($col['darbar_500'] ?? 0)*500) + (($col['darbar_100'] ?? 0)*100) + (($col['darbar_50'] ?? 0)*50) + (($col['darbar_20'] ?? 0)*20) + (($col['darbar_10'] ?? 0)*10);
+    $calc += (($col['andron_5000'] ?? 0)*5000) + (($col['andron_1000'] ?? 0)*1000) + (($col['andron_500'] ?? 0)*500) + (($col['andron_100'] ?? 0)*100) + (($col['andron_50'] ?? 0)*50) + (($col['andron_20'] ?? 0)*20) + (($col['andron_10'] ?? 0)*10);
+    $calc += (($col['beron_5000'] ?? 0)*5000) + (($col['beron_1000'] ?? 0)*1000) + (($col['beron_500'] ?? 0)*500) + (($col['beron_100'] ?? 0)*100) + (($col['beron_50'] ?? 0)*50) + (($col['beron_20'] ?? 0)*20) + (($col['beron_10'] ?? 0)*10);
     
     // Manual
     $man = ($col['darbar_total']??0) + ($col['andron_total']??0) + ($col['beron_total']??0);
@@ -75,9 +75,9 @@ $st->execute([$year]);
 $pre_col = 0;
 while($col = $st->fetch()) {
     $calc = 0;
-    $calc += ($col['darbar_5000']*5000) + ($col['darbar_1000']*1000) + ($col['darbar_500']*500) + ($col['darbar_100']*100) + ($col['darbar_50']*50) + ($col['darbar_20']*20) + ($col['darbar_10']*10);
-    $calc += ($col['andron_5000']*5000) + ($col['andron_1000']*1000) + ($col['andron_500']*500) + ($col['andron_100']*100) + ($col['andron_50']*50) + ($col['andron_20']*20) + ($col['andron_10']*10);
-    $calc += ($col['beron_5000']*5000) + ($col['beron_1000']*1000) + ($col['beron_500']*500) + ($col['beron_100']*100) + ($col['beron_50']*50) + ($col['beron_20']*20) + ($col['beron_10']*10);
+    $calc += (($col['darbar_5000'] ?? 0)*5000) + (($col['darbar_1000'] ?? 0)*1000) + (($col['darbar_500'] ?? 0)*500) + (($col['darbar_100'] ?? 0)*100) + (($col['darbar_50'] ?? 0)*50) + (($col['darbar_20'] ?? 0)*20) + (($col['darbar_10'] ?? 0)*10);
+    $calc += (($col['andron_5000'] ?? 0)*5000) + (($col['andron_1000'] ?? 0)*1000) + (($col['andron_500'] ?? 0)*500) + (($col['andron_100'] ?? 0)*100) + (($col['andron_50'] ?? 0)*50) + (($col['andron_20'] ?? 0)*20) + (($col['andron_10'] ?? 0)*10);
+    $calc += (($col['beron_5000'] ?? 0)*5000) + (($col['beron_1000'] ?? 0)*1000) + (($col['beron_500'] ?? 0)*500) + (($col['beron_100'] ?? 0)*100) + (($col['beron_50'] ?? 0)*50) + (($col['beron_20'] ?? 0)*20) + (($col['beron_10'] ?? 0)*10);
     
     $man = ($col['darbar_total']??0) + ($col['andron_total']??0) + ($col['beron_total']??0);
     $pre_col += ($man > 0) ? $man : $calc;
@@ -93,9 +93,9 @@ for($m=1; $m<=12; $m++) {
     $m_col = 0;
     while($col = $st->fetch()) {
         $calc = 0;
-        $calc += ($col['darbar_5000']*5000) + ($col['darbar_1000']*1000) + ($col['darbar_500']*500) + ($col['darbar_100']*100) + ($col['darbar_50']*50) + ($col['darbar_20']*20) + ($col['darbar_10']*10);
-        $calc += ($col['andron_5000']*5000) + ($col['andron_1000']*1000) + ($col['andron_500']*500) + ($col['andron_100']*100) + ($col['andron_50']*50) + ($col['andron_20']*20) + ($col['andron_10']*10);
-        $calc += ($col['beron_5000']*5000) + ($col['beron_1000']*1000) + ($col['beron_500']*500) + ($col['beron_100']*100) + ($col['beron_50']*50) + ($col['beron_20']*20) + ($col['beron_10']*10);
+        $calc += (($col['darbar_5000'] ?? 0)*5000) + (($col['darbar_1000'] ?? 0)*1000) + (($col['darbar_500'] ?? 0)*500) + (($col['darbar_100'] ?? 0)*100) + (($col['darbar_50'] ?? 0)*50) + (($col['darbar_20'] ?? 0)*20) + (($col['darbar_10'] ?? 0)*10);
+        $calc += (($col['andron_5000'] ?? 0)*5000) + (($col['andron_1000'] ?? 0)*1000) + (($col['andron_500'] ?? 0)*500) + (($col['andron_100'] ?? 0)*100) + (($col['andron_50'] ?? 0)*50) + (($col['andron_20'] ?? 0)*20) + (($col['andron_10'] ?? 0)*10);
+        $calc += (($col['beron_5000'] ?? 0)*5000) + (($col['beron_1000'] ?? 0)*1000) + (($col['beron_500'] ?? 0)*500) + (($col['beron_100'] ?? 0)*100) + (($col['beron_50'] ?? 0)*50) + (($col['beron_20'] ?? 0)*20) + (($col['beron_10'] ?? 0)*10);
         
         $man = ($col['darbar_total']??0) + ($col['andron_total']??0) + ($col['beron_total']??0);
         $m_col += ($man > 0) ? $man : $calc;
@@ -118,6 +118,7 @@ for($m=1; $m<=12; $m++) {
 }
 ?>
 
+<?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
 <div class="row mb-4 align-items-center no-print">
     <div class="col-md-5">
         <h2 class="section-title mb-0">ڈیش بورڈ (Dashboard)</h2>
@@ -304,5 +305,16 @@ new Chart(document.getElementById('flowChart'), {
     }
 });
 </script>
+
+<?php else: ?>
+<div class="row mt-5">
+    <div class="col-12 text-center">
+        <img src="logo.jpeg" alt="Logo" style="height: 120px; margin-bottom: 20px;">
+        <h2 class="mb-4" style="font-family: 'Jameel Noori Nastaleeq', 'Arial', sans-serif;">خوش آمدید (Welcome)</h2>
+        <p class="lead text-muted">Please select an option from the sidebar to start your work.</p>
+        <p class="lead text-muted" style="font-family: 'Jameel Noori Nastaleeq', 'Arial', sans-serif;">اپنا کام شروع کرنے کے لیے براہ کرم سائیڈ بار سے ایک آپشن منتخب کریں۔</p>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php include 'footer.php'; ?>

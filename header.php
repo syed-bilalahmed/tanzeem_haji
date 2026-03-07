@@ -48,9 +48,12 @@
             <img src="logo.jpeg" alt="Logo" class="sidebar-logo">
             <h2>تنظیم اولاد حاجی بہادر</h2>
             <nav>
+                <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                 <a href="dashboard.php" class="dashboard-link"><i class="fas fa-tachometer-alt"></i> ڈیش بورڈ (Dashboard)</a>
+                <?php endif; ?>
                 
                 <!-- Collections Group -->
+                <?php if(has_permission('collections')): ?>
                 <div class="nav-group">
                     <div class="nav-parent">
                         <i class="fas fa-layer-group"></i> چندہ (Collections)
@@ -60,8 +63,10 @@
                         <a href="collections.php" class="nav-sub"><i class="fas fa-list"></i> ریکارڈز (View All)</a>
                     </div>
                 </div>
+                <?php endif; ?>
                 
                 <!-- Monthly Ledger (Unified) -->
+                <?php if(has_permission('ledger')): ?>
                 <div class="nav-group">
                     <div class="nav-parent">
                         <i class="fas fa-file-invoice-dollar"></i> کھاتہ (Monthly Ledger)
@@ -71,8 +76,10 @@
                         <a href="history.php" class="nav-sub"><i class="fas fa-history"></i> ماہانہ ریکارڈ (History)</a>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <!-- Salaries Group -->
+                <?php if(has_permission('salaries')): ?>
                 <div class="nav-group">
                     <div class="nav-parent">
                         <i class="fas fa-money-check-alt"></i> ماہانہ تنخواہ (Monthly Pay)
@@ -83,8 +90,10 @@
                         <a href="templates.php" class="nav-sub"><i class="fas fa-cog"></i> ٹیمپلیٹس (Templates)</a>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <!-- Notices Group -->
+                <?php if(has_permission('notices')): ?>
                 <div class="nav-group">
                     <div class="nav-parent">
                         <i class="fas fa-bullhorn"></i> نوٹیفکیشن (Notices)
@@ -94,8 +103,10 @@
                         <a href="notices.php" class="nav-sub"><i class="fas fa-list"></i> ریکارڈز (View All)</a>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <!-- Reports Group -->
+                <?php if(has_permission('reports')): ?>
                 <div class="nav-group">
                     <div class="nav-parent">
                         <i class="fas fa-chart-bar"></i> رپورٹس (Reports)
@@ -105,8 +116,10 @@
                         <a href="multi_year_report.php" class="nav-sub"><i class="fas fa-layer-group"></i> کثیر سالانہ (Multi-Year)</a>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <!-- Record Services Group -->
+                <?php if(has_permission('funeral')): ?>
                 <div class="nav-group">
                     <div class="nav-parent">
                         <i class="fas fa-book"></i> ریکارڈ سروسز (Services)
@@ -115,8 +128,10 @@
                         <a href="funeral_record.php" class="nav-sub"><i class="fas fa-praying-hands"></i> تجہیز و تکفین (Funeral Record)</a>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <!-- Admin Settings -->
+                <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                 <div class="nav-group">
                     <div class="nav-parent">
                         <i class="fas fa-cog"></i> سیٹنگز (Settings)
@@ -124,13 +139,17 @@
                     <div class="nav-children">
                         <a href="admin_shajra.php" class="nav-sub"><i class="fas fa-sitemap"></i> شجرہ نسب مینجمنٹ (Shajra CRUD)</a>
                         <a href="admin_office_bearers.php" class="nav-sub"><i class="fas fa-user-tie"></i> عہدیداران (Office Bearers)</a>
-                        <a href="admin_settings.php" class="nav-sub"><i class="fas fa-cogs"></i> سیٹنگز (Settings)</a>
+                        <a href="admin_settings.php" class="nav-sub"><i class="fas fa-cogs"></i> مین پیج سیٹنگز (Settings)</a>
+                        <a href="admin_users.php" class="nav-sub"><i class="fas fa-users-cog"></i> یوزرز مینجمنٹ (Users)</a>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 
+                <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                 <a href="backup.php" class="dashboard-link" style="margin-top:20px; color:black;"><i class="fas fa-database"></i> ڈیٹا بیس بیک اپ (Backup)</a>
                 <a href="restore.php" class="dashboard-link" style="margin-top:5px; color:black;"><i class="fas fa-trash-restore"></i> ریسٹور بیک اپ (Restore)</a>
+                <?php endif; ?>
 
                 <a href="logout.php" class="logout-btn" style="margin-top:20px; display:block; padding:10px; background:#d9534f; color:white; text-align:center; border-radius:5px;"><i class="fas fa-sign-out-alt"></i> لاگ آؤٹ (Logout)</a>
             </nav>
