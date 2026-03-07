@@ -3,6 +3,78 @@ include 'config.php';
 include 'auth_session.php'; // Ensure user is logged in
 include 'header.php';
 
+function parse_month_year_value($value) {
+    $value = trim((string) $value);
+    if ($value === '') {
+        return null;
+    }
+
+    $value = preg_replace('/[\/_-]+/u', ' ', $value);
+    $value = preg_replace('/\s+/u', ' ', trim($value));
+    $parts = preg_split('/\s+/u', $value);
+    if (!$parts || count($parts) > 2) {
+        return null;
+    }
+
+    $month_token_raw = $parts[0];
+    $month_token = function_exists('mb_strtolower') ? mb_strtolower($month_token_raw, 'UTF-8') : strtolower($month_token_raw);
+    $year = (count($parts) === 2 && preg_match('/^\d{4}$/', $parts[1])) ? (int) $parts[1] : (int) date('Y');
+
+    $month_map = [
+        'january' => 1, 'jan' => 1, 'jany' => 1,
+        'february' => 2, 'feb' => 2, 'feburary' => 2, 'febuary' => 2,
+        'march' => 3, 'mar' => 3,
+        'april' => 4, 'apr' => 4,
+        'may' => 5,
+        'june' => 6, 'jun' => 6,
+        'july' => 7, 'jul' => 7,
+        'august' => 8, 'aug' => 8,
+        'september' => 9, 'sep' => 9, 'sept' => 9,
+        'october' => 10, 'oct' => 10,
+        'november' => 11, 'nov' => 11,
+        'december' => 12, 'dec' => 12, 'decmber' => 12,
+        'جنوری' => 1,
+        'فروری' => 2,
+        'مارچ' => 3,
+        'اپریل' => 4,
+        'مئی' => 5,
+        'جون' => 6,
+        'جولائی' => 7,
+        'اگست' => 8,
+        'ستمبر' => 9,
+        'اکتوبر' => 10,
+        'نومبر' => 11,
+        'دسمبر' => 12
+    ];
+
+    if (isset($month_map[$month_token])) {
+        return ['year' => $year, 'month' => $month_map[$month_token]];
+    }
+
+    return null;
+}
+
+function get_month_span_inclusive($month_from, $month_to) {
+    $start = parse_month_year_value($month_from);
+    if (!$start) {
+        return 1;
+    }
+
+    $end = trim((string) $month_to) === '' ? $start : parse_month_year_value($month_to);
+    if (!$end) {
+        $end = $start;
+    }
+
+    $start_index = ($start['year'] * 12) + $start['month'];
+    $end_index = ($end['year'] * 12) + $end['month'];
+
+    if ($end_index < $start_index) {
+        [$start_index, $end_index] = [$end_index, $start_index];
+    }
+
+    return ($end_index - $start_index) + 1;
+}
+
 // Fetch all active renters
 $stmt = $pdo->query("SELECT * FROM renters WHERE status = 'active' ORDER BY shop_no ASC");
 $renters = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -15,13 +87,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $receipt_date = $_POST['receipt_date'];
     $month_from   = trim($_POST['month_from']);
     $month_to     = trim($_POST['month_to']);
+    $months_count = get_month_span_inclusive($month_from, $month_to);
     
     // Arrays from form
     $generate_flags   = isset($_POST['generate']) ? $_POST['generate'] : [];
     $renter_ids       = $_POST['renter_id'];
     $monthly_rents    = $_POST['monthly_rent'];
     $arrears_list     = $_POST['arrears'];
-    $total_amounts    = $_POST['total_amount'];
     $received_amounts = $_POST['received_amount'];
     $notes_list       = $_POST['notes'];
 
@@ -54,9 +126,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $r_id = $renter_ids[$index];
                     $r_monthly = floatval($monthly_rents[$index]);
                     $r_arrears = floatval($arrears_list[$index]);
-                    $r_total = floatval($total_amounts[$index]);
                     $r_received = floatval($received_amounts[$index]);
                     $r_notes = $notes_list[$index];
+
+                    // Enforce backend total from month range.
+                    $r_total = ($r_monthly * $months_count) + $r_arrears;
                     
                     $r_remaining = $r_total - $r_received;
                     
@@ -118,11 +192,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
                     <div class="col-md-4 form-group">
                         <label>مہینہ از (Month From): <span class="text-danger">*</span></label>
-                        <input type="text" name="month_from" class="form-control" placeholder="مثلاً: مارچ 2026" required>
+                        <input type="text" name="month_from" id="month_from" class="form-control" placeholder="مثلاً: مارچ 2026" required>
                     </div>
                     <div class="col-md-4 form-group">
                         <label>مہینہ تک (Month To):</label>
-                        <input type="text" name="month_to" class="form-control" placeholder="مثلاً: مئی 2026 (اختیاری)">
+                        <input type="text" name="month_to" id="month_to" class="form-control" placeholder="مثلاً: مئی 2026 (اختیاری)">
                     </div>
                 </div>
 
@@ -160,7 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </td>
                                 <td>
                                     <!-- Default to 1 month -->
-                                    <input type="number" id="months_<?php echo $index; ?>" class="form-control input-sm row-calc" value="1" min="1" onchange="calcRow(<?php echo $index; ?>)" onkeyup="calcRow(<?php echo $index; ?>)">
+                                    <input type="number" id="months_<?php echo $index; ?>" class="form-control input-sm row-calc" value="1" min="1" readonly>
                                 </td>
                                 <td>
                                     <input type="number" name="arrears[<?php echo $index; ?>]" id="arrears_<?php echo $index; ?>" class="form-control input-sm row-calc" value="0" onchange="calcRow(<?php echo $index; ?>)" onkeyup="calcRow(<?php echo $index; ?>)">
@@ -192,6 +266,77 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </div>
 
 <script>
+    const monthFromInput = document.getElementById('month_from');
+    const monthToInput = document.getElementById('month_to');
+
+    function parseMonthYear(text) {
+        const value = (text || '').trim();
+        if (!value) return null;
+
+        const normalized = value.replace(/[\/_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+        const parts = normalized.split(' ');
+        if (parts.length < 1 || parts.length > 2) return null;
+
+        const token = parts[0].toLowerCase();
+        const year = (parts.length === 2 && /^\d{4}$/.test(parts[1])) ? parseInt(parts[1], 10) : new Date().getFullYear();
+
+        const monthMap = {
+            'january': 1, 'jan': 1, 'jany': 1,
+            'february': 2, 'feb': 2, 'feburary': 2, 'febuary': 2,
+            'march': 3, 'mar': 3,
+            'april': 4, 'apr': 4,
+            'may': 5,
+            'june': 6, 'jun': 6,
+            'july': 7, 'jul': 7,
+            'august': 8, 'aug': 8,
+            'september': 9, 'sep': 9, 'sept': 9,
+            'october': 10, 'oct': 10,
+            'november': 11, 'nov': 11,
+            'december': 12, 'dec': 12, 'decmber': 12,
+            'جنوری': 1,
+            'فروری': 2,
+            'مارچ': 3,
+            'اپریل': 4,
+            'مئی': 5,
+            'جون': 6,
+            'جولائی': 7,
+            'اگست': 8,
+            'ستمبر': 9,
+            'اکتوبر': 10,
+            'نومبر': 11,
+            'دسمبر': 12
+        };
+
+        if (monthMap[token]) {
+            return { year: year, month: monthMap[token] };
+        }
+
+        return null;
+    }
+
+    function getMonthsCount() {
+        const start = parseMonthYear(monthFromInput.value);
+        if (!start) return 1;
+
+        const end = parseMonthYear(monthToInput.value) || start;
+        let startIndex = (start.year * 12) + start.month;
+        let endIndex = (end.year * 12) + end.month;
+
+        if (endIndex < startIndex) {
+            [startIndex, endIndex] = [endIndex, startIndex];
+        }
+
+        return (endIndex - startIndex) + 1;
+    }
+
+    function recalcAllRows() {
+        document.querySelectorAll('[id^="months_"]').forEach((el) => {
+            const idx = el.id.replace('months_', '');
+            el.value = getMonthsCount();
+            calcRow(idx);
+        });
+    }
+
     // Select All Checkbox
     document.getElementById('selectAll').addEventListener('change', function() {
         let checkboxes = document.querySelectorAll('.row-checkbox');
@@ -203,7 +348,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Calculate specific row total = (rent * months) + arrears
     function calcRow(index) {
         let rent = parseFloat(document.getElementById('rent_'+index).value) || 0;
-        let months = parseFloat(document.getElementById('months_'+index).value) || 1;
+        let months = getMonthsCount();
+        document.getElementById('months_'+index).value = months;
         let arrears = parseFloat(document.getElementById('arrears_'+index).value) || 0;
         let total = (rent * months) + arrears;
         
@@ -222,6 +368,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         document.getElementById('balance_'+index).value = balance;
     }
+
+    monthFromInput.addEventListener('input', recalcAllRows);
+    monthToInput.addEventListener('input', recalcAllRows);
+    recalcAllRows();
 </script>
 
 <style>

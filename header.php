@@ -1,4 +1,4 @@
-<?php include 'auth_session.php'; ?>
+<?php include __DIR__ . '/auth_session.php'; ?>
 <!DOCTYPE html>
 <html lang="ur" dir="ltr">
 
@@ -119,6 +119,7 @@
                 <?php endif; ?>
 
                 <!-- Shop Rents Group -->
+                <?php if(has_permission('salaries')): ?>
                 <div class="nav-group">
                     <div class="nav-parent">
                         <i class="fas fa-store"></i> دکانوں کا کرایہ (Shop Rents)
@@ -130,6 +131,7 @@
                         <a href="rents_detail.php" class="nav-sub"><i class="fas fa-table"></i> تفصیلات (Rents Detail)</a>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <!-- Record Services Group -->
                 <?php if(has_permission('funeral')): ?>

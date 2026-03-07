@@ -1,8 +1,8 @@
 <?php
-include 'config.php';
-include 'auth_session.php';
+include __DIR__ . '/config.php';
+include __DIR__ . '/auth_session.php';
 
-if(!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+if (!has_permission('salaries_edit') || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     die("Access Denied.");
 }
 

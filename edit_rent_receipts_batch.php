@@ -1,7 +1,84 @@
 <?php
-include 'config.php';
-include 'auth_session.php';
-include 'header.php';
+include __DIR__ . '/config.php';
+include __DIR__ . '/auth_session.php';
+
+if (!has_permission('salaries_edit')) {
+    die("<div style='text-align:center; margin-top:50px; font-size:20px; font-family:Arial;'>Access Denied. You do not have permission to edit rent receipts.</div>");
+}
+
+function parse_month_year_value($value) {
+    $value = trim((string) $value);
+    if ($value === '') {
+        return null;
+    }
+
+    $value = preg_replace('/[\/_-]+/u', ' ', $value);
+    $value = preg_replace('/\s+/u', ' ', trim($value));
+    $parts = preg_split('/\s+/u', $value);
+    if (!$parts || count($parts) > 2) {
+        return null;
+    }
+
+    $month_token_raw = $parts[0];
+    $month_token = function_exists('mb_strtolower') ? mb_strtolower($month_token_raw, 'UTF-8') : strtolower($month_token_raw);
+    $year = (count($parts) === 2 && preg_match('/^\d{4}$/', $parts[1])) ? (int) $parts[1] : (int) date('Y');
+
+    $month_map = [
+        'january' => 1, 'jan' => 1, 'jany' => 1,
+        'february' => 2, 'feb' => 2, 'feburary' => 2, 'febuary' => 2,
+        'march' => 3, 'mar' => 3,
+        'april' => 4, 'apr' => 4,
+        'may' => 5,
+        'june' => 6, 'jun' => 6,
+        'july' => 7, 'jul' => 7,
+        'august' => 8, 'aug' => 8,
+        'september' => 9, 'sep' => 9, 'sept' => 9,
+        'october' => 10, 'oct' => 10,
+        'november' => 11, 'nov' => 11,
+        'december' => 12, 'dec' => 12, 'decmber' => 12,
+        'جنوری' => 1,
+        'فروری' => 2,
+        'مارچ' => 3,
+        'اپریل' => 4,
+        'مئی' => 5,
+        'جون' => 6,
+        'جولائی' => 7,
+        'اگست' => 8,
+        'ستمبر' => 9,
+        'اکتوبر' => 10,
+        'نومبر' => 11,
+        'دسمبر' => 12
+    ];
+
+    if (isset($month_map[$month_token])) {
+        return ['year' => $year, 'month' => $month_map[$month_token]];
+    }
+
+    return null;
+}
+
+function get_month_span_inclusive($month_from, $month_to) {
+    $start = parse_month_year_value($month_from);
+    if (!$start) {
+        return 1;
+    }
+
+    $end = trim((string) $month_to) === '' ? $start : parse_month_year_value($month_to);
+    if (!$end) {
+        $end = $start;
+    }
+
+    $start_index = ($start['year'] * 12) + $start['month'];
+    $end_index = ($end['year'] * 12) + $end['month'];
+
+    if ($end_index < $start_index) {
+        [$start_index, $end_index] = [$end_index, $start_index];
+    }
+
+    return ($end_index - $start_index) + 1;
+}
+
+include __DIR__ . '/header.php';
 
 if (!isset($_GET['ids']) || empty($_GET['ids'])) {
     die("Invalid request - IDs not found.");
@@ -22,12 +99,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_batch'])) {
     try {
         $pdo->beginTransaction();
         foreach ($_POST['receipt_id'] as $index => $id) {
-            $month_from = $_POST['month_from'][$index];
-            $month_to = $_POST['month_to'][$index];
-            $monthly_rent = $_POST['monthly_rent'][$index];
-            $arrears = $_POST['arrears'][$index];
-            $total_amount = $_POST['total_amount'][$index];
-            $amount_received = $_POST['amount_received'][$index];
+            $month_from = trim($_POST['month_from'][$index]);
+            $month_to = trim($_POST['month_to'][$index]);
+            $monthly_rent = floatval($_POST['monthly_rent'][$index]);
+            $arrears = floatval($_POST['arrears'][$index]);
+            $months_count = get_month_span_inclusive($month_from, $month_to);
+            $total_amount = ($monthly_rent * $months_count) + $arrears;
+            $amount_received = floatval($_POST['amount_received'][$index]);
             $remaining_balance = $total_amount - $amount_received;
             $notes = $_POST['notes'][$index];
 
@@ -100,8 +178,8 @@ $receipts = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <strong><?php echo htmlspecialchars($r['shop_no']); ?></strong><br>
                                 <small><?php echo htmlspecialchars($r['shopkeeper_name']); ?></small>
                             </td>
-                            <td><input type="text" name="month_from[<?php echo $index; ?>]" class="form-control form-control-sm" value="<?php echo htmlspecialchars($r['month_from']); ?>"></td>
-                            <td><input type="text" name="month_to[<?php echo $index; ?>]" class="form-control form-control-sm" value="<?php echo htmlspecialchars($r['month_to']); ?>"></td>
+                            <td><input type="text" name="month_from[<?php echo $index; ?>]" id="month_from_<?php echo $index; ?>" class="form-control form-control-sm" value="<?php echo htmlspecialchars($r['month_from']); ?>" onchange="calcRow(<?php echo $index; ?>)" onkeyup="calcRow(<?php echo $index; ?>)"></td>
+                            <td><input type="text" name="month_to[<?php echo $index; ?>]" id="month_to_<?php echo $index; ?>" class="form-control form-control-sm" value="<?php echo htmlspecialchars($r['month_to']); ?>" onchange="calcRow(<?php echo $index; ?>)" onkeyup="calcRow(<?php echo $index; ?>)"></td>
                             <td><input type="number" name="monthly_rent[<?php echo $index; ?>]" id="rent_<?php echo $index; ?>" class="form-control form-control-sm row-calc" value="<?php echo $r['monthly_rent']; ?>" onchange="calcRow(<?php echo $index; ?>)"></td>
                             <td><input type="number" name="arrears[<?php echo $index; ?>]" id="arrears_<?php echo $index; ?>" class="form-control form-control-sm row-calc" value="<?php echo $r['arrears']; ?>" onchange="calcRow(<?php echo $index; ?>)"></td>
                             <td><input type="number" name="total_amount[<?php echo $index; ?>]" id="total_<?php echo $index; ?>" class="form-control form-control-sm bg-light" value="<?php echo $r['total_amount']; ?>" readonly></td>
@@ -122,13 +200,79 @@ $receipts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </div>
 
 <script>
+function parseMonthYear(text) {
+    const value = (text || '').trim();
+    if (!value) return null;
+
+    const normalized = value.replace(/[\/_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+    const parts = normalized.split(' ');
+    if (parts.length < 1 || parts.length > 2) return null;
+
+    const token = parts[0].toLowerCase();
+    const year = (parts.length === 2 && /^\d{4}$/.test(parts[1])) ? parseInt(parts[1], 10) : new Date().getFullYear();
+
+    const monthMap = {
+        'january': 1, 'jan': 1, 'jany': 1,
+        'february': 2, 'feb': 2, 'feburary': 2, 'febuary': 2,
+        'march': 3, 'mar': 3,
+        'april': 4, 'apr': 4,
+        'may': 5,
+        'june': 6, 'jun': 6,
+        'july': 7, 'jul': 7,
+        'august': 8, 'aug': 8,
+        'september': 9, 'sep': 9, 'sept': 9,
+        'october': 10, 'oct': 10,
+        'november': 11, 'nov': 11,
+        'december': 12, 'dec': 12, 'decmber': 12,
+        'جنوری': 1,
+        'فروری': 2,
+        'مارچ': 3,
+        'اپریل': 4,
+        'مئی': 5,
+        'جون': 6,
+        'جولائی': 7,
+        'اگست': 8,
+        'ستمبر': 9,
+        'اکتوبر': 10,
+        'نومبر': 11,
+        'دسمبر': 12
+    };
+
+    if (monthMap[token]) {
+        return { year: year, month: monthMap[token] };
+    }
+
+    return null;
+}
+
+function getMonthsCount(index) {
+    const start = parseMonthYear(document.getElementById('month_from_'+index).value);
+    if (!start) return 1;
+
+    const end = parseMonthYear(document.getElementById('month_to_'+index).value) || start;
+    let startIndex = (start.year * 12) + start.month;
+    let endIndex = (end.year * 12) + end.month;
+
+    if (endIndex < startIndex) {
+        [startIndex, endIndex] = [endIndex, startIndex];
+    }
+
+    return (endIndex - startIndex) + 1;
+}
+
 function calcRow(index) {
     let rent = parseFloat(document.getElementById('rent_'+index).value) || 0;
+    let months = getMonthsCount(index);
     let arrears = parseFloat(document.getElementById('arrears_'+index).value) || 0;
-    let total = rent + arrears; // Note: simplified for batch edit as multiplier is complex to track per row here unless added UI
+    let total = (rent * months) + arrears;
     document.getElementById('total_'+index).value = total;
     document.getElementById('received_'+index).value = total;
 }
+
+document.querySelectorAll('input[id^="rent_"], input[id^="arrears_"], input[id^="month_from_"], input[id^="month_to_"]').forEach((el) => {
+    const idx = el.id.split('_').pop();
+    calcRow(idx);
+});
 </script>
 
 <?php include 'footer.php'; ?>

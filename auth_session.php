@@ -20,5 +20,5 @@ if (isset($pdo)) {
     }
 }
 
-require_once 'access_helper.php';
+require_once __DIR__ . '/access_helper.php';
 ?>

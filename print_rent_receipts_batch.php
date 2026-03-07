@@ -1,5 +1,10 @@
 <?php
-include 'config.php';
+include __DIR__ . '/config.php';
+include __DIR__ . '/auth_session.php';
+
+if (!has_permission('salaries')) {
+    die("<div style='text-align:center; margin-top:50px; font-size:20px; font-family:Arial;'>Access Denied. You do not have permission to print rent receipts.</div>");
+}
 
 if (!isset($_GET['ids']) || empty($_GET['ids'])) {
     die("Invalid request - IDs not found.");

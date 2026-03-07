@@ -1,5 +1,7 @@
-include 'config.php';
-include_once 'auth_session.php';
+<?php
+include __DIR__ . '/config.php';
+include_once __DIR__ . '/auth_session.php';
+require_once __DIR__ . '/access_helper.php';
 if (!has_permission('collections')) { die("<div style='text-align:center; margin-top:50px; font-size:20px; font-family:Arial;'>Access Denied. You do not have permission to view collections.</div>"); }
 if (isset($_POST['year'])) {
     $year = $_POST['year'];
@@ -24,7 +26,8 @@ if (isset($_POST['year'])) {
             'date_raw' => $col['collection_date'],
             'date' => date('d-m-Y', strtotime($col['collection_date'])),
             'amount' => number_format($grand_total),
-            'id' => $col['id']
+            'id' => $col['id'],
+            'can_edit' => has_permission('collections_edit')
         ];
     }
     
