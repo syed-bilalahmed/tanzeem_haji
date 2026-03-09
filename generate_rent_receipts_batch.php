@@ -75,6 +75,11 @@ function get_month_span_inclusive($month_from, $month_to, &$error = null) {
         $end['year'] = $start['year'];
     }
 
+    // If user enters month names only and end month is earlier, treat it as next year.
+    if (empty($start['has_year']) && empty($end['has_year']) && $end['month'] < $start['month']) {
+        $end['year'] = $start['year'] + 1;
+    }
+
     $start_index = ($start['year'] * 12) + $start['month'];
     $end_index = ($end['year'] * 12) + $end['month'];
 
@@ -102,10 +107,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Arrays from form
     $generate_flags   = isset($_POST['generate']) ? $_POST['generate'] : [];
     $renter_ids       = $_POST['renter_id'];
-    $monthly_rents    = $_POST['monthly_rent'];
-    $arrears_list     = $_POST['arrears'];
-    $received_amounts = $_POST['received_amount'];
-    $notes_list       = $_POST['notes'];
+    $monthly_rents    = isset($_POST['monthly_rent']) ? $_POST['monthly_rent'] : [];
+    $total_amounts    = isset($_POST['total_amount']) ? $_POST['total_amount'] : [];
 
     if (empty($receipt_date) || empty($month_from)) {
         $error = "تاریخ اور مہینہ از (Month From) ضروری ہیں۔";
@@ -136,15 +139,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Check if this renter was actually submitted with basic data
                 if (isset($renter_ids[$index])) {
                     $r_id = $renter_ids[$index];
-                    $r_monthly = floatval($monthly_rents[$index]);
-                    $r_arrears = floatval($arrears_list[$index]);
-                    $r_received = floatval($received_amounts[$index]);
-                    $r_notes = $notes_list[$index];
+                    $r_monthly = isset($monthly_rents[$index]) ? floatval($monthly_rents[$index]) : 0;
 
-                    // Enforce backend total from month range.
-                    $r_total = ($r_monthly * $months_count) + $r_arrears;
-                    
-                    $r_remaining = $r_total - $r_received;
+                    // Keep total editable from UI; fallback to computed value.
+                    $computed_total = $r_monthly * $months_count;
+                    $r_total = isset($total_amounts[$index]) ? floatval($total_amounts[$index]) : $computed_total;
+                    if ($r_total < 0) {
+                        $r_total = 0;
+                    }
+
+                    $r_arrears = 0;
+                    $r_received = $r_total;
+                    $r_remaining = 0;
+                    $r_notes = '';
                     
                     $next_receipt_no++;
 
@@ -204,17 +211,48 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
                     <div class="col-md-4 form-group">
                         <label>مہینہ از (Month From): <span class="text-danger">*</span></label>
-                        <input type="text" name="month_from" id="month_from" class="form-control" placeholder="مثلاً: مارچ 2026" required>
+                        <select name="month_from" id="month_from" class="form-control" required>
+                            <option value="">مہینہ منتخب کریں</option>
+                            <option value="جنوری">جنوری</option>
+                            <option value="فروری">فروری</option>
+                            <option value="مارچ">مارچ</option>
+                            <option value="اپریل">اپریل</option>
+                            <option value="مئی">مئی</option>
+                            <option value="جون">جون</option>
+                            <option value="جولائی">جولائی</option>
+                            <option value="اگست">اگست</option>
+                            <option value="ستمبر">ستمبر</option>
+                            <option value="اکتوبر">اکتوبر</option>
+                            <option value="نومبر">نومبر</option>
+                            <option value="دسمبر">دسمبر</option>
+                        </select>
                     </div>
                     <div class="col-md-4 form-group">
                         <label>مہینہ تک (Month To):</label>
-                        <input type="text" name="month_to" id="month_to" class="form-control" placeholder="مثلاً: مئی 2026 (اختیاری)">
+                        <select name="month_to" id="month_to" class="form-control">
+                            <option value="">خالی چھوڑیں (صرف ایک مہینہ)</option>
+                            <option value="جنوری">جنوری</option>
+                            <option value="فروری">فروری</option>
+                            <option value="مارچ">مارچ</option>
+                            <option value="اپریل">اپریل</option>
+                            <option value="مئی">مئی</option>
+                            <option value="جون">جون</option>
+                            <option value="جولائی">جولائی</option>
+                            <option value="اگست">اگست</option>
+                            <option value="ستمبر">ستمبر</option>
+                            <option value="اکتوبر">اکتوبر</option>
+                            <option value="نومبر">نومبر</option>
+                            <option value="دسمبر">دسمبر</option>
+                        </select>
                     </div>
                 </div>
 
                 <!-- Renters Table -->
                 <div class="table-responsive">
-                    <table class="table table-bordered table-striped" style="min-width: 1100px;">
+                    <div class="alert alert-info py-2 mb-2">
+                        ماہانہ کرایہ یہاں رسید کے لئے عارضی طور پر تبدیل کیا جا سکتا ہے۔ اس سے `renters.php` والا اصل ماہانہ کرایہ تبدیل نہیں ہوگا۔
+                    </div>
+                    <table class="table table-bordered table-striped batch-rent-table">
                         <thead class="table-dark">
                             <tr>
                                 <th width="50" class="text-center">
@@ -223,11 +261,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <th width="200">دکان / دکاندار</th>
                                 <th>ماہانہ کرایہ</th>
                                 <th width="100">مہینوں کی تعداد</th>
-                                <th>پچھلا بقایا</th>
                                 <th>کل رقم (Rs)</th>
-                                <th>وصول شدہ (Rs)</th>
-                                <th>باقی بقایا (Rs)</th>
-                                <th width="120">نوٹ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -242,26 +276,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     <small class="text-muted"><?php echo htmlspecialchars($r['shopkeeper_name']); ?></small>
                                 </td>
                                 <td>
-                                    <input type="number" name="monthly_rent[<?php echo $index; ?>]" id="rent_<?php echo $index; ?>" class="form-control input-sm row-calc" value="<?php echo floatval($r['monthly_rent']); ?>" onchange="calcRow(<?php echo $index; ?>)" onkeyup="calcRow(<?php echo $index; ?>)">
+                                    <input type="number" name="monthly_rent[<?php echo $index; ?>]" id="rent_<?php echo $index; ?>" class="form-control input-sm row-calc" value="<?php echo floatval($r['monthly_rent']); ?>" min="0" step="0.01" onchange="calcRow(<?php echo $index; ?>)" onkeyup="calcRow(<?php echo $index; ?>)">
                                 </td>
                                 <td>
                                     <!-- Default to 1 month -->
                                     <input type="number" id="months_<?php echo $index; ?>" class="form-control input-sm row-calc" value="1" min="1" readonly>
                                 </td>
                                 <td>
-                                    <input type="number" name="arrears[<?php echo $index; ?>]" id="arrears_<?php echo $index; ?>" class="form-control input-sm row-calc" value="0" onchange="calcRow(<?php echo $index; ?>)" onkeyup="calcRow(<?php echo $index; ?>)">
-                                </td>
-                                <td>
-                                    <input type="number" name="total_amount[<?php echo $index; ?>]" id="total_<?php echo $index; ?>" class="form-control input-sm text-primary font-weight-bold row-calc" value="<?php echo floatval($r['monthly_rent']); ?>" onchange="calcBal(<?php echo $index; ?>)" onkeyup="calcBal(<?php echo $index; ?>)">
-                                </td>
-                                <td>
-                                    <input type="number" name="received_amount[<?php echo $index; ?>]" id="received_<?php echo $index; ?>" class="form-control input-sm text-success font-weight-bold row-calc" value="<?php echo floatval($r['monthly_rent']); ?>" onchange="calcBal(<?php echo $index; ?>)" onkeyup="calcBal(<?php echo $index; ?>)">
-                                </td>
-                                <td>
-                                    <input type="number" id="balance_<?php echo $index; ?>" class="form-control input-sm text-danger" value="0" readonly>
-                                </td>
-                                <td>
-                                    <input type="text" name="notes[<?php echo $index; ?>]" class="form-control input-sm" placeholder="اختیاری">
+                                    <input type="number" name="total_amount[<?php echo $index; ?>]" id="total_<?php echo $index; ?>" class="form-control input-sm text-primary font-weight-bold row-calc" value="<?php echo floatval($r['monthly_rent']); ?>" min="0" step="0.01">
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -342,6 +364,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if (start.hasYear && !end.hasYear) {
             end.year = start.year;
         }
+
+        // For month-only range like نومبر to جنوری, assume next year for end month.
+        if (!start.hasYear && !end.hasYear && end.month < start.month) {
+            end.year = start.year + 1;
+        }
+
         let startIndex = (start.year * 12) + start.month;
         let endIndex = (end.year * 12) + end.month;
 
@@ -369,41 +397,41 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     });
 
-    // Calculate specific row total = (rent * months) + arrears
+    // Calculate specific row total = rent * months.
     function calcRow(index) {
         let rent = parseFloat(document.getElementById('rent_'+index).value) || 0;
         let months = getMonthsCount();
         if (!months) {
             document.getElementById('months_'+index).value = '';
             document.getElementById('total_'+index).value = '';
-            calcBal(index);
             return;
         }
         document.getElementById('months_'+index).value = months;
-        let arrears = parseFloat(document.getElementById('arrears_'+index).value) || 0;
-        let total = (rent * months) + arrears;
+        let total = rent * months;
         
         document.getElementById('total_'+index).value = total;
-        calcBal(index);
     }
 
-    // Calculate specific row balance = total - received
-    function calcBal(index) {
-        let total = parseFloat(document.getElementById('total_'+index).value) || 0;
-        let received = parseFloat(document.getElementById('received_'+index).value) || 0;
-        let balance = total - received;
-        
-        document.getElementById('balance_'+index).value = balance;
-    }
-
-    monthFromInput.addEventListener('input', recalcAllRows);
-    monthToInput.addEventListener('input', recalcAllRows);
+    monthFromInput.addEventListener('change', recalcAllRows);
+    monthToInput.addEventListener('change', recalcAllRows);
     recalcAllRows();
 </script>
 
 <style>
     .input-sm { padding: 4px 8px; font-size: 14px; height: 32px; }
     .table td { vertical-align: middle; }
+    .batch-rent-table { width: 100%; table-layout: fixed; }
+    .batch-rent-table th,
+    .batch-rent-table td { font-size: 13px; padding: 6px; }
+    .batch-rent-table td:nth-child(2) { word-break: break-word; }
+    .batch-rent-table .form-control { min-width: 0; width: 100%; }
+
+    @media (max-width: 1200px) {
+        .container-fluid { padding: 12px !important; }
+        .batch-rent-table th,
+        .batch-rent-table td { font-size: 12px; padding: 4px; }
+        .batch-rent-table .input-sm { height: 30px; font-size: 12px; padding: 3px 6px; }
+    }
 </style>
 
 <?php include 'footer.php'; ?>

@@ -7,7 +7,7 @@ if (!has_permission('salaries')) {
 }
 
 $can_rents_edit = has_permission('salaries_edit');
-$table_colspan = $can_rents_edit ? 10 : 9;
+$table_colspan = $can_rents_edit ? 9 : 8;
 
 include __DIR__ . '/header.php';
 
@@ -191,7 +191,6 @@ $grand_total_year = 0;
                     <th>دکاندار</th>
                     <th>مہینہ (Month)</th>
                     <th>وصول شدہ (Received)</th>
-                    <th>بقایا (Balance)</th>
                     <th class="no-print">ایکشن (Actions)</th>
                 </tr>
             </thead>
@@ -215,7 +214,6 @@ $grand_total_year = 0;
                                 ?>
                             </td>
                             <td class="table-success font-weight-bold"><?php echo number_format($rec['amount_received']); ?></td>
-                            <td class="<?php echo $rec['remaining_balance'] > 0 ? 'table-danger' : ''; ?>"><?php echo number_format($rec['remaining_balance']); ?></td>
                             <td class="no-print">
                                 <div class="d-flex gap-1 justify-content-center">
                                     <a href="print_rent_receipt.php?id=<?php echo $rec['id']; ?>" class="btn btn-sm btn-info" target="_blank" title="View/Print"><i class="fas fa-eye"></i></a>
@@ -234,7 +232,7 @@ $grand_total_year = 0;
                         <td class="no-print"></td>
                         <?php endif; ?>
                         <td colspan="6" style="text-align:left;">کل وصولی (Total Received):</td>
-                        <td colspan="3" style="text-align:right;"><?php echo number_format($total_monthly_received); ?> روپے</td>
+                        <td colspan="2" style="text-align:right;"><?php echo number_format($total_monthly_received); ?> روپے</td>
                     </tr>
                 <?php else: ?>
                     <tr>

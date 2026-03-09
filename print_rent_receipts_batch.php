@@ -171,8 +171,8 @@ function renderReceipt($type, $receipt, $formatted_date) {
             margin-top: 15px; /* Pushed down from top edge slightly */
         }
         .header-logo {
-            width: 45px; /* Shrunk logo further */
-            height: 45px;
+            width: 64px;
+            height: 64px;
         }
         .header-text {
             text-align: center;
@@ -233,17 +233,46 @@ function renderReceipt($type, $receipt, $formatted_date) {
         }
         
         @media print {
+            @page {
+                size: A4;
+                margin: 6mm;
+            }
+
             body { background: white; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .a4-page { 
                 margin: 0; 
-                padding: 0; 
+                padding: 2mm 3mm;
                 box-shadow: none; 
                 width: 100%;
-                min-height: 100%;
+                height: calc(297mm - 12mm);
+                min-height: calc(297mm - 12mm);
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                break-inside: avoid;
+                page-break-inside: avoid;
+                break-after: page;
                 page-break-after: always;
             }
-            .a4-page:last-child {
+            .a4-page.last-page {
+                break-after: auto;
                 page-break-after: auto;
+            }
+            .receipt-section {
+                flex: 0 0 48%;
+                height: 48%;
+                min-height: 48%;
+                overflow: hidden;
+            }
+            .cut-line {
+                margin: 1.5mm 0;
+            }
+            .receipt-paragraph {
+                line-height: 2.2;
+            }
+            .signatures {
+                margin-top: auto;
             }
             .no-print { display: none; }
         }
@@ -266,16 +295,25 @@ function renderReceipt($type, $receipt, $formatted_date) {
         }
         .btn-print { background: #0d6efd; }
         .btn-print:hover { background: #0b5ed7; }
+        .btn-back {
+            background: #198754;
+            text-decoration: none;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        .btn-back:hover { background: #157347; color: #fff; }
         .btn-close { background: #6c757d; margin-right: 10px; }
         .btn-close:hover { background: #5c636a; }
     </style>
 </head>
 <body>
     <div class="no-print print-controls">
+        <a href="generate_rent_receipts_batch.php" class="btn btn-back">نیا بیچ (New Batch)</a>
         <button onclick="window.print()" class="btn btn-print">پرنٹ کریں (Print All)</button>
         <button onclick="window.close()" class="btn btn-close">بند کریں</button>
     </div>
-    <?php foreach($receipts as $receipt): ?>
+    <?php $total_receipts = count($receipts); ?>
+    <?php foreach($receipts as $index => $receipt): ?>
     <?php $formatted_date = date('d-m-Y', strtotime($receipt['receipt_date'])); ?>
     
     <div class="no-print mt-3 mb-1" style="width: 210mm; margin: 0 auto; text-align: right;">
@@ -283,7 +321,7 @@ function renderReceipt($type, $receipt, $formatted_date) {
         <a href="delete_rent_receipt.php?id=<?php echo $receipt['id']; ?>" class="btn btn-sm" style="background: #dc3545; color: #fff;" onclick="return confirm('کیا آپ واقعی یہ رسید ڈیلیٹ کرنا چاہتے ہیں؟');">ڈیلیٹ (Delete)</a>
     </div>
 
-    <div class="a4-page mt-0">
+    <div class="a4-page mt-0<?php echo ($index === $total_receipts - 1) ? ' last-page' : ''; ?>">
         <!-- Office Copy -->
         <?php echo renderReceipt('office', $receipt, $formatted_date); ?>
         
