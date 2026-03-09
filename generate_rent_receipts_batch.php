@@ -423,13 +423,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     .batch-rent-table { width: 100%; table-layout: fixed; }
     .batch-rent-table th,
     .batch-rent-table td { font-size: 13px; padding: 6px; }
-    .batch-rent-table td:nth-child(2) { word-break: break-word; }
+    .batch-rent-table td:nth-child(2) {
+        word-break: break-word;
+        font-size: 16px;
+        line-height: 1.5;
+    }
+    .batch-rent-table td:nth-child(2) strong { font-size: 17px; }
+    .batch-rent-table td:nth-child(2) small { font-size: 14px !important; }
     .batch-rent-table .form-control { min-width: 0; width: 100%; }
 
     @media (max-width: 1200px) {
         .container-fluid { padding: 12px !important; }
         .batch-rent-table th,
         .batch-rent-table td { font-size: 12px; padding: 4px; }
+        .batch-rent-table td:nth-child(2) { font-size: 14px; }
+        .batch-rent-table td:nth-child(2) strong { font-size: 15px; }
+        .batch-rent-table td:nth-child(2) small { font-size: 12px !important; }
         .batch-rent-table .input-sm { height: 30px; font-size: 12px; padding: 3px 6px; }
     }
 </style>

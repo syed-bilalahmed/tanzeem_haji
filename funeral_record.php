@@ -116,8 +116,8 @@ if (!$summary) $summary = ['ret_digging'=>0, 'ret_tea'=>0, 'ret_truck'=>0, 'ret_
 ?>
 
 <div class="card shadow-sm">
-    <div class="no-print d-flex justify-content-between align-items-center mb-4">
-        <h3 class="mb-0">Funeral & Burial Record (<?php echo $current_year; ?>)</h3>
+    <div class="no-print d-flex justify-content-between align-items-center mb-4 funeral-toolbar">
+        <h3 class="mb-0 mobile-hide-heading">Funeral & Burial Record (<?php echo $current_year; ?>)</h3>
         <div class="d-flex gap-2">
             <form method="GET" class="d-flex gap-2">
                 <select name="year" class="form-control form-control-sm" onchange="this.form.submit()">
@@ -182,23 +182,23 @@ if (!$summary) $summary = ['ret_digging'=>0, 'ret_tea'=>0, 'ret_truck'=>0, 'ret_
                             $dis = has_permission('funeral_edit') ? '' : 'disabled';
                         ?>
                         <tr>
-                            <td class="text-center fw-bold"><?php echo $rowCount; ?></td>
-                            <td>
+                            <td class="text-center fw-bold" data-label="S.No"><?php echo $rowCount; ?></td>
+                            <td data-label="Name of Deceased Person">
                                 <?php if(has_permission('funeral_edit')): ?>
                                 <input type="hidden" name="records[<?php echo $idx; ?>][id]" value="<?php echo $rec['id']; ?>">
                                 <?php endif; ?>
                                 <input type="text" name="records[<?php echo $idx; ?>][name]" value="<?php echo $s_name; ?>" class="form-control-plaintext table-input" placeholder="" <?php echo $ro; ?>>
                             </td>
-                            <td><input type="date" name="records[<?php echo $idx; ?>][death_date]" value="<?php echo $s_death_date; ?>" class="form-control-plaintext table-input text-center" <?php echo $ro; ?>></td>
-                            <td><input type="text" name="records[<?php echo $idx; ?>][place]" value="<?php echo $s_place; ?>" class="form-control-plaintext table-input" placeholder="" <?php echo $ro; ?>></td>
-                            <td><input type="text" name="records[<?php echo $idx; ?>][kafan_kit]" value="<?php echo $s_kafan; ?>" class="form-control-plaintext table-input text-center" placeholder="-" <?php echo $ro; ?>></td>
-                            <td><input type="number" step="0.01" name="records[<?php echo $idx; ?>][digging]" value="<?php echo  $rec['digging']; ?>" class="form-control-plaintext table-input text-center amt-field" data-col="digging" placeholder="" <?php echo $ro; ?>></td>
-                            <td><input type="number" step="0.01" name="records[<?php echo $idx; ?>][tea]" value="<?php echo $rec['tea']; ?>" class="form-control-plaintext table-input text-center amt-field" data-col="tea" placeholder="" <?php echo $ro; ?>></td>
-                            <td><input type="number" step="0.01" name="records[<?php echo $idx; ?>][truck]" value="<?php echo $rec['truck']; ?>" class="form-control-plaintext table-input text-center amt-field" data-col="truck" placeholder="" <?php echo $ro; ?>></td>
-                            <td><input type="number" step="0.01" name="records[<?php echo $idx; ?>][other]" value="<?php echo $rec['other']; ?>" class="form-control-plaintext table-input text-center amt-field" data-col="other" placeholder="" <?php echo $ro; ?>></td>
-                            <td><input type="text" class="form-control-plaintext table-input text-center fw-bold total-field" readonly tabIndex="-1"></td>
-                            <td><input type="text" name="records[<?php echo $idx; ?>][remarks]" value="<?php echo $s_remarks; ?>" class="form-control-plaintext table-input" placeholder="" <?php echo $ro; ?>></td>
-                            <td class="no-print text-center">
+                            <td data-label="Date of Death"><input type="date" name="records[<?php echo $idx; ?>][death_date]" value="<?php echo $s_death_date; ?>" class="form-control-plaintext table-input text-center" <?php echo $ro; ?>></td>
+                            <td data-label="Place of Death"><input type="text" name="records[<?php echo $idx; ?>][place]" value="<?php echo $s_place; ?>" class="form-control-plaintext table-input" placeholder="" <?php echo $ro; ?>></td>
+                            <td data-label="Kafan Kit"><input type="text" name="records[<?php echo $idx; ?>][kafan_kit]" value="<?php echo $s_kafan; ?>" class="form-control-plaintext table-input text-center" placeholder="-" <?php echo $ro; ?>></td>
+                            <td data-label="Grave Digging"><input type="number" step="0.01" name="records[<?php echo $idx; ?>][digging]" value="<?php echo  $rec['digging']; ?>" class="form-control-plaintext table-input text-center amt-field" data-col="digging" placeholder="" <?php echo $ro; ?>></td>
+                            <td data-label="Workers Tea & Juice"><input type="number" step="0.01" name="records[<?php echo $idx; ?>][tea]" value="<?php echo $rec['tea']; ?>" class="form-control-plaintext table-input text-center amt-field" data-col="tea" placeholder="" <?php echo $ro; ?>></td>
+                            <td data-label="Shazar Truck"><input type="number" step="0.01" name="records[<?php echo $idx; ?>][truck]" value="<?php echo $rec['truck']; ?>" class="form-control-plaintext table-input text-center amt-field" data-col="truck" placeholder="" <?php echo $ro; ?>></td>
+                            <td data-label="Other"><input type="number" step="0.01" name="records[<?php echo $idx; ?>][other]" value="<?php echo $rec['other']; ?>" class="form-control-plaintext table-input text-center amt-field" data-col="other" placeholder="" <?php echo $ro; ?>></td>
+                            <td data-label="Total"><input type="text" class="form-control-plaintext table-input text-center fw-bold total-field" readonly tabIndex="-1"></td>
+                            <td data-label="Remarks"><input type="text" name="records[<?php echo $idx; ?>][remarks]" value="<?php echo $s_remarks; ?>" class="form-control-plaintext table-input" placeholder="" <?php echo $ro; ?>></td>
+                            <td class="no-print text-center" data-label="Action">
                                 <?php if(has_permission('funeral_edit')): ?>
                                 <?php if (isset($rec['is_returned']) && $rec['is_returned']): ?>
                                     <span class="badge bg-success" style="font-size: 0.7em;"><i class="fas fa-check"></i> Ret</span>
@@ -223,20 +223,20 @@ if (!$summary) $summary = ['ret_digging'=>0, 'ret_tea'=>0, 'ret_truck'=>0, 'ret_
                                 $newIdx = 9999 + $i; // Temp logic for index
                         ?>
                         <tr>
-                            <td class="text-center fw-bold"><?php echo ++$rowCount; ?></td>
-                            <td>
+                            <td class="text-center fw-bold" data-label="S.No"><?php echo ++$rowCount; ?></td>
+                            <td data-label="Name of Deceased Person">
                                 <input type="text" name="records[<?php echo $newIdx; ?>][name]" class="form-control-plaintext table-input" placeholder="">
                             </td>
-                            <td><input type="date" name="records[<?php echo $newIdx; ?>][death_date]" value="<?php echo date('Y-m-d'); ?>" class="form-control-plaintext table-input text-center"></td>
-                            <td><input type="text" name="records[<?php echo $newIdx; ?>][place]" class="form-control-plaintext table-input" placeholder=""></td>
-                            <td><input type="text" name="records[<?php echo $newIdx; ?>][kafan_kit]" class="form-control-plaintext table-input text-center" placeholder="-"></td>
-                            <td><input type="number" step="0.01" name="records[<?php echo $newIdx; ?>][digging]" class="form-control-plaintext table-input text-center amt-field" data-col="digging" placeholder=""></td>
-                            <td><input type="number" step="0.01" name="records[<?php echo $newIdx; ?>][tea]" class="form-control-plaintext table-input text-center amt-field" data-col="tea" placeholder=""></td>
-                            <td><input type="number" step="0.01" name="records[<?php echo $newIdx; ?>][truck]" class="form-control-plaintext table-input text-center amt-field" data-col="truck" placeholder=""></td>
-                            <td><input type="number" step="0.01" name="records[<?php echo $newIdx; ?>][other]" class="form-control-plaintext table-input text-center amt-field" data-col="other" placeholder=""></td>
-                            <td><input type="text" class="form-control-plaintext table-input text-center fw-bold total-field" readonly tabIndex="-1"></td>
-                            <td><input type="text" name="records[<?php echo $newIdx; ?>][remarks]" class="form-control-plaintext table-input" placeholder=""></td>
-                            <td class="no-print"></td>
+                            <td data-label="Date of Death"><input type="date" name="records[<?php echo $newIdx; ?>][death_date]" value="<?php echo date('Y-m-d'); ?>" class="form-control-plaintext table-input text-center"></td>
+                            <td data-label="Place of Death"><input type="text" name="records[<?php echo $newIdx; ?>][place]" class="form-control-plaintext table-input" placeholder=""></td>
+                            <td data-label="Kafan Kit"><input type="text" name="records[<?php echo $newIdx; ?>][kafan_kit]" class="form-control-plaintext table-input text-center" placeholder="-"></td>
+                            <td data-label="Grave Digging"><input type="number" step="0.01" name="records[<?php echo $newIdx; ?>][digging]" class="form-control-plaintext table-input text-center amt-field" data-col="digging" placeholder=""></td>
+                            <td data-label="Workers Tea & Juice"><input type="number" step="0.01" name="records[<?php echo $newIdx; ?>][tea]" class="form-control-plaintext table-input text-center amt-field" data-col="tea" placeholder=""></td>
+                            <td data-label="Shazar Truck"><input type="number" step="0.01" name="records[<?php echo $newIdx; ?>][truck]" class="form-control-plaintext table-input text-center amt-field" data-col="truck" placeholder=""></td>
+                            <td data-label="Other"><input type="number" step="0.01" name="records[<?php echo $newIdx; ?>][other]" class="form-control-plaintext table-input text-center amt-field" data-col="other" placeholder=""></td>
+                            <td data-label="Total"><input type="text" class="form-control-plaintext table-input text-center fw-bold total-field" readonly tabIndex="-1"></td>
+                            <td data-label="Remarks"><input type="text" name="records[<?php echo $newIdx; ?>][remarks]" class="form-control-plaintext table-input" placeholder=""></td>
+                            <td class="no-print" data-label="Action"></td>
                         </tr>
                         <?php endfor; endif; ?>
                     </tbody>
@@ -400,6 +400,47 @@ if (!$summary) $summary = ['ret_digging'=>0, 'ret_tea'=>0, 'ret_truck'=>0, 'ret_
         .content-wrapper {
             max-width: 100% !important;
             padding: 10px;
+        }
+    }
+
+    @media screen and (max-width: 767px) {
+        .mobile-hide-heading {
+            display: none !important;
+        }
+
+        .funeral-toolbar {
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px !important;
+        }
+
+        .funeral-toolbar > .d-flex.gap-2 {
+            width: 100%;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .print-container {
+            padding: 10px;
+        }
+
+        .header-section {
+            display: none;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #recordTable,
+        #summaryTable {
+            min-width: 980px;
+        }
+
+        #recordTable .table-input {
+            font-size: 14px;
+            min-height: 34px;
         }
     }
 
@@ -568,18 +609,18 @@ if (!$summary) $summary = ['ret_digging'=>0, 'ret_tea'=>0, 'ret_truck'=>0, 'ret_
         const tr = document.createElement('tr');
         const uniqueIdx = Date.now(); // Simple unique ID for array key
         tr.innerHTML = `
-            <td class="text-center fw-bold">${rowCount}</td>
-            <td><input type="text" name="records[new_${uniqueIdx}][name]" class="form-control-plaintext table-input" placeholder=""></td>
-            <td><input type="date" name="records[new_${uniqueIdx}][death_date]" value="<?php echo date('Y-m-d'); ?>" class="form-control-plaintext table-input text-center"></td>
-            <td><input type="text" name="records[new_${uniqueIdx}][place]" class="form-control-plaintext table-input" placeholder=""></td>
-            <td><input type="text" name="records[new_${uniqueIdx}][kafan_kit]" class="form-control-plaintext table-input text-center" placeholder="-"></td>
-            <td><input type="number" step="0.01" name="records[new_${uniqueIdx}][digging]" class="form-control-plaintext table-input text-center amt-field" data-col="digging" placeholder=""></td>
-            <td><input type="number" step="0.01" name="records[new_${uniqueIdx}][tea]" class="form-control-plaintext table-input text-center amt-field" data-col="tea" placeholder=""></td>
-            <td><input type="number" step="0.01" name="records[new_${uniqueIdx}][truck]" class="form-control-plaintext table-input text-center amt-field" data-col="truck" placeholder=""></td>
-            <td><input type="number" step="0.01" name="records[new_${uniqueIdx}][other]" class="form-control-plaintext table-input text-center amt-field" data-col="other" placeholder=""></td>
-            <td><input type="text" class="form-control-plaintext table-input text-center fw-bold total-field" readonly tabIndex="-1"></td>
-            <td><input type="text" name="records[new_${uniqueIdx}][remarks]" class="form-control-plaintext table-input" placeholder=""></td>
-            <td class="no-print"></td>
+            <td class="text-center fw-bold" data-label="S.No">${rowCount}</td>
+            <td data-label="Name of Deceased Person"><input type="text" name="records[new_${uniqueIdx}][name]" class="form-control-plaintext table-input" placeholder=""></td>
+            <td data-label="Date of Death"><input type="date" name="records[new_${uniqueIdx}][death_date]" value="<?php echo date('Y-m-d'); ?>" class="form-control-plaintext table-input text-center"></td>
+            <td data-label="Place of Death"><input type="text" name="records[new_${uniqueIdx}][place]" class="form-control-plaintext table-input" placeholder=""></td>
+            <td data-label="Kafan Kit"><input type="text" name="records[new_${uniqueIdx}][kafan_kit]" class="form-control-plaintext table-input text-center" placeholder="-"></td>
+            <td data-label="Grave Digging"><input type="number" step="0.01" name="records[new_${uniqueIdx}][digging]" class="form-control-plaintext table-input text-center amt-field" data-col="digging" placeholder=""></td>
+            <td data-label="Workers Tea & Juice"><input type="number" step="0.01" name="records[new_${uniqueIdx}][tea]" class="form-control-plaintext table-input text-center amt-field" data-col="tea" placeholder=""></td>
+            <td data-label="Shazar Truck"><input type="number" step="0.01" name="records[new_${uniqueIdx}][truck]" class="form-control-plaintext table-input text-center amt-field" data-col="truck" placeholder=""></td>
+            <td data-label="Other"><input type="number" step="0.01" name="records[new_${uniqueIdx}][other]" class="form-control-plaintext table-input text-center amt-field" data-col="other" placeholder=""></td>
+            <td data-label="Total"><input type="text" class="form-control-plaintext table-input text-center fw-bold total-field" readonly tabIndex="-1"></td>
+            <td data-label="Remarks"><input type="text" name="records[new_${uniqueIdx}][remarks]" class="form-control-plaintext table-input" placeholder=""></td>
+            <td class="no-print" data-label="Action"></td>
         `;
         tbody.appendChild(tr);
         
